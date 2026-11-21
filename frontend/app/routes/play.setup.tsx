@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "~/components/ui/button";
+import { connectGameHub, type GameHub } from "~/lib/game-hub";
 
 // Client-only route: not in the prerender list.
 export function meta() {
@@ -8,12 +9,27 @@ export function meta() {
 }
 
 export default function PlaySetup() {
-  const [result, setResult] = useState<string>();
+  const hub = useRef<GameHub>(null);
+  const [connected, setConnected] = useState(false);
+  const [popup, setPopup] = useState(false);
 
-  async function loadWeather() {
-    const response = await fetch("/api/weatherforecast");
-    setResult(JSON.stringify(await response.json(), null, 2));
-  }
+  useEffect(() => {
+    const connection = connectGameHub();
+    hub.current = connection;
+    let timer: ReturnType<typeof setTimeout>;
+
+    connection.onStatusChange(setConnected);
+    connection.onPinged(() => {
+      setPopup(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setPopup(false), 3000);
+    });
+
+    return () => {
+      clearTimeout(timer);
+      void connection.stop();
+    };
+  }, []);
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:gap-6 sm:px-6 sm:py-16">
@@ -26,18 +42,25 @@ export default function PlaySetup() {
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
         Game setup
       </h1>
+      <p className="text-sm text-muted-foreground">
+        {connected ? "Connected" : "Connecting…"}
+      </p>
       <div>
         <Button
-          onClick={loadWeather}
+          onClick={() => void hub.current?.ping()}
+          disabled={!connected}
           className="h-12 w-full text-base sm:h-9 sm:w-auto sm:text-sm"
         >
-          Get weather
+          Ping
         </Button>
       </div>
-      {result && (
-        <pre className="overflow-x-auto rounded-xl border p-4 text-sm">
-          {result}
-        </pre>
+      {popup && (
+        <div
+          role="status"
+          className="fixed inset-x-4 bottom-4 rounded-xl border bg-background p-4 text-center font-medium shadow-lg sm:inset-x-auto sm:right-4 sm:w-64"
+        >
+          Ping
+        </div>
       )}
     </main>
   );

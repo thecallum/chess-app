@@ -1,0 +1,19 @@
+# Dev override for the api service: runs the source with `dotnet watch`
+# (hot reload) instead of the published image. Used by the Makefile.
+# Relative paths resolve against the root docker-compose.yml.
+services:
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    build: !reset null
+    working_dir: /src/backend
+    command: dotnet watch run --project src/ChessApp.Api --non-interactive --no-launch-profile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    volumes:
+      - ./backend:/src/backend
+      - nuget:/root/.nuget/packages
+
+volumes:
+  nuget:

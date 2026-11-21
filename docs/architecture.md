@@ -65,6 +65,7 @@ One entry each: what was chosen, why, what was rejected, and what would make me 
 - **WebSockets for the game, HTTP for before and after.**
   - Why: the socket suits pushed events and low latency, while HTTP gives clear replies and errors for create and join.
   - Rejected: everything over the socket.
+  - Implementation: a SignalR hub at `/api/hubs/game` (`GameHub`), wrapped on the client by `app/lib/game-hub.ts`.
   - Revisit: if the split causes awkward flows.
 - **One API instance in v1, backplane later.**
   - Why: simplest to build, designed so more instances are possible.
