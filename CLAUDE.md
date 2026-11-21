@@ -9,7 +9,7 @@ A multiplayer web chess app (v1: guests, invite-code games, one time control). A
 
 ## Stack
 
-- **Backend:** .NET 10 (`backend/`): `ChessApp.Api` (HTTP, WebSockets, and the timeout/cleanup scheduler as a hosted service), `ChessApp.Core` (domain logic, no framework dependencies), plus tests. v1 is a single API instance, so no SignalR backplane and no separate scheduler process.
+- **Backend:** .NET 10 (`backend/`): `ChessApp.Api` (one project: `Controllers/` for HTTP, `UseCases/` for application logic, `Gateways/` for storage and other outside systems, `Models/` for domain types, plus WebSockets and the timeout/cleanup scheduler as a hosted service), plus tests. v1 is a single API instance, so no SignalR backplane and no separate scheduler process.
 - **Frontend:** React + TypeScript with Vite and React Router framework mode (`frontend/`). Entirely client-side, with no SSR server. Some routes are pre-rendered to static HTML and hydrated (`ssr: false` plus a `prerender` list). Others are client-only and use the SPA fallback.
 - **Local dev and deployment:** Docker and Docker Compose. Postgres is hosted separately in production.
 

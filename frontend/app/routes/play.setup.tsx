@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Bot, ChevronRight, Globe, Users, type LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
+import { createGame, describeJoinError, joinGame } from "~/lib/api";
 
 // Client-only route: not in the prerender list.
 export function meta() {
   return [{ title: "Start a game | Chess" }];
 }
-
-const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 type Colour = "white" | "black" | "random";
 type ModeId = "friend" | "online" | "computer";
@@ -138,23 +137,37 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
   const [colour, setColour] = useState<Colour>("random");
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState<string>();
+  const [createError, setCreateError] = useState<string>();
+  const [busy, setBusy] = useState(false);
 
-  function create(e: React.FormEvent) {
+  async function create(e: React.FormEvent) {
     e.preventDefault();
-    // Placeholder: the server will create the game and return its id.
-    const gameId = crypto.randomUUID();
-    void navigate(`/play/games/${gameId}`, { state: { role: "host", colour } });
+    setBusy(true);
+    setCreateError(undefined);
+    try {
+      const game = await createGame(colour);
+      void navigate(`/play/games/${game.gameId}`);
+    } catch {
+      setCreateError("Couldn't create the game. Please try again.");
+      setBusy(false);
+    }
   }
 
-  function join(e: React.FormEvent) {
+  async function join(e: React.FormEvent) {
     e.preventDefault();
-    const value = code.trim().toLowerCase();
-    if (!guid.test(value)) {
-      setCodeError("That doesn't look like a valid invite code.");
+    const value = code.trim();
+    if (!value) {
+      setCodeError("Enter an invite code.");
       return;
     }
-    // Placeholder: the server will check the code and seat the player.
-    void navigate(`/play/games/${value}`, { state: { role: "guest" } });
+    setBusy(true);
+    try {
+      const game = await joinGame(value);
+      void navigate(`/play/games/${game.gameId}`);
+    } catch (error) {
+      setCodeError(describeJoinError(error));
+      setBusy(false);
+    }
   }
 
   return (
@@ -170,7 +183,7 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
         Play a friend
       </h1>
 
-      <form onSubmit={create} className="flex flex-col gap-6">
+      <form onSubmit={(e) => void create(e)} className="flex flex-col gap-6">
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-3 text-sm font-medium text-muted-foreground uppercase">
             Your colour
@@ -204,10 +217,16 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
 
         <Button
           type="submit"
+          disabled={busy}
           className="h-12 w-full text-base font-semibold sm:h-11 sm:w-auto sm:self-start sm:px-6"
         >
           Create game
         </Button>
+        {createError && (
+          <p role="alert" className="text-sm text-destructive">
+            {createError}
+          </p>
+        )}
       </form>
 
       <section
@@ -220,7 +239,10 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
         >
           Join with a code
         </h2>
-        <form onSubmit={join} className="flex flex-col gap-2 sm:flex-row">
+        <form
+          onSubmit={(e) => void join(e)}
+          className="flex flex-col gap-2 sm:flex-row"
+        >
           <input
             value={code}
             onChange={(e) => {
@@ -228,16 +250,18 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
               setCodeError(undefined);
             }}
             placeholder="Enter an invite code"
+            maxLength={12}
             aria-label="Invite code"
             aria-invalid={codeError ? true : undefined}
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
-            className="h-12 min-w-0 flex-1 rounded-lg border bg-background px-3 font-mono text-base sm:h-9 sm:text-sm"
+            className="h-12 min-w-0 flex-1 rounded-lg border bg-background px-3 font-mono uppercase text-base sm:h-9 sm:text-sm"
           />
           <Button
             type="submit"
             variant="outline"
+            disabled={busy}
             className="h-12 text-base sm:h-9 sm:text-sm"
           >
             Join game

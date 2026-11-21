@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ChessApp.Core\ChessApp.Core.csproj" />
+    <ProjectReference Include="..\..\src\ChessApp.Api\ChessApp.Api.csproj" />
   </ItemGroup>
 
 </Project>

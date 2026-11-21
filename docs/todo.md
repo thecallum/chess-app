@@ -13,15 +13,15 @@ Decide and add only what the next steps need:
 ## 2. Backend foundations
 - [ ] Decide the real-time library (SignalR) and the chess rules library
 - [ ] Postgres access and migrations (decide EF Core or alternatives), wire up the compose connection string
-- [ ] Guest session: a random GUID in an HttpOnly cookie, issued by its own request, never replaced if present
-- [ ] Cross-site protections: SameSite cookie, Origin check on the WebSocket upgrade, custom header on HTTP endpoints
+- [x] Guest session: a random GUID in an HttpOnly cookie, issued by its own request, never replaced if present
+- [~] Cross-site protections: SameSite cookie and custom header done; Origin check on the WebSocket upgrade still to do
 - [ ] Structured logging with game id and player id
 
 ## 3. Walking skeleton: create and join a game
 - [ ] Data: `games` and `moves` tables
-- [ ] HTTP: create a game (colour choice, invite code) and join by code, with errors for invalid, expired and full
+- [x] HTTP: create a game (colour choice, invite code) and join by code, with errors for invalid, expired and full (in-memory store for now, Postgres still to do)
 - [x] Frontend: homepage, start page (play a friend, disabled online and AI placeholders), waiting screen with the code (scaffolded, no requests yet)
-- [ ] Game channel: join over WebSocket, receive current state, "opponent joined" event
+- [ ] Game channel: join over WebSocket, receive current state, "opponent joined" event (the host's waiting screen needs a refresh until this is done)
 
 ## 4. Playing a game
 - [ ] Move flow: client sends move and move number, server validates and commits in one transaction, then notifies the opponent
@@ -43,7 +43,7 @@ Decide and add only what the next steps need:
 - [ ] Sound and browser notification on your turn
 
 ## 7. Quality and hosting
-- [ ] Tests for Core logic and the move flow, with the SignalR client mocked
+- [ ] Tests for use cases and the move flow, with the SignalR client mocked
 - [ ] Verify the assumptions listed in the notes (row-lock behaviour, WebSocket support on the host, remote database latency)
 - [ ] Choose a host and deploy the Docker image, with Postgres hosted separately
 - [ ] Keep [architecture.md](architecture.md) up to date as decisions change

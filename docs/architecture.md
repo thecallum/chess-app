@@ -21,7 +21,7 @@ Ranking not yet confirmed. Current list:
 
 ## Components
 - **Browser:** React app, rendered client-side. UI and light client logic only.
-- **API instance:** HTTP endpoints, WebSocket game channels and the scheduler service. Validates moves and writes state. One instance in v1.
+- **API instance:** one project laid out as `Controllers/` (HTTP, thin), `UseCases/` (application logic), `Gateways/` (storage and other outside systems, behind interfaces) and `Models/` (domain types). HTTP endpoints, WebSocket game channels and the scheduler service. Validates moves and writes state. One instance in v1.
 - **Scheduler:** a hosted background service inside the API process (not a separate project). Ends timed-out games and cleans up never-started games. Safe because v1 runs exactly one API instance.
 - **Postgres:** all durable state, hosted separately from the app.
 - **Backplane (later):** managed Redis or similar, to carry events between API instances.
@@ -33,6 +33,7 @@ Ranking not yet confirmed. Current list:
 - **game_draw_offer:** many per game, one pending at a time.
 - **game_rematch_offer:** one per game.
 - Identity is a random GUID in an HttpOnly cookie, referenced by the game rows.
+- **Invite code:** 6 characters from an unambiguous alphabet (no 0/O/1/I/L), case-insensitive, valid for 24 hours. Until Postgres is added, games live in an in-memory store behind `IGameGateway` and are lost on restart.
 
 ## Key flows
 - **Create and join:** session cookie issued by a separate request, then HTTP create returns a code, the opponent joins by code over HTTP, both join the game channel over the socket and receive the current state.
