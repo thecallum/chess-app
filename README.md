@@ -24,6 +24,6 @@ docker compose --profile full up --build
 ```
 
 - Frontend: http://localhost:8080
-- API: http://localhost:5080/api/weatherforecast (also proxied at http://localhost:8080/api/weatherforecast)
+- API: http://localhost:5080 (also proxied at http://localhost:8080/api/)
 
 See the component READMEs for native commands. The to-do list is in [docs/todo.md](docs/todo.md).
