@@ -21,11 +21,11 @@ Ranking not yet confirmed. Current list:
 
 ## Components
 - **Browser:** React app, rendered client-side. UI and light client logic only.
-- **API instance:** HTTP endpoints and WebSocket game channels. Validates moves and writes state. One instance in v1.
-- **Scheduler:** a separate process. Ends timed-out games and cleans up never-started games. The only process doing time-based work.
+- **API instance:** HTTP endpoints, WebSocket game channels and the scheduler service. Validates moves and writes state. One instance in v1.
+- **Scheduler:** a hosted background service inside the API process (not a separate project). Ends timed-out games and cleans up never-started games. Safe because v1 runs exactly one API instance.
 - **Postgres:** all durable state, hosted separately from the app.
 - **Backplane (later):** managed Redis or similar, to carry events between API instances.
-- Everything except Postgres can run in one Docker image on a cheap VPS.
+- Everything except Postgres runs in one Docker image on a cheap VPS, alongside the static frontend files.
 
 ## Data
 - **games:** colours, owner, clients, board state, last move time, time remaining per player, state (never started, in progress, finished), result, invite code, created time.
@@ -58,10 +58,10 @@ One entry each: what was chosen, why, what was rejected, and what would make me 
   - Why: no per-game timers, nothing depends on open sockets, and a restart can't lose a running clock.
   - Rejected: server timers per game.
   - Revisit: if clock accuracy under lag becomes a complaint.
-- **A separate scheduler for timeouts and cleanup.**
-  - Why: one instance means no competition for the same work, and it is easy to test. It can take on queue matching later.
-  - Rejected: clients asking the server about timeouts as the only trigger, and a scheduler inside the API process (every instance would run it).
-  - Revisit: if a single scheduler becomes a bottleneck or a risk. The escape route is sharding.
+- **The scheduler runs inside the API process, as a hosted service.** (Changed 2026-11-21: was a separate process.)
+  - Why: a separate process would need a SignalR backplane to notify players, which is complexity v1 doesn't need. With one API instance there is one scheduler and no competition for the same work. It can take on queue matching later.
+  - Rejected: a separate scheduler project and process (needs the backplane), and clients asking the server about timeouts as the only trigger.
+  - Revisit: when a second API instance is needed. Then the scheduler must be split out or made safe to run on several instances, along with the backplane.
 - **WebSockets for the game, HTTP for before and after.**
   - Why: the socket suits pushed events and low latency, while HTTP gives clear replies and errors for create and join.
   - Rejected: everything over the socket.
@@ -103,7 +103,6 @@ One entry each: what was chosen, why, what was rejected, and what would make me 
 - Prefer C#, React, Python or Node.
 - Assumed and to verify:
   - Postgres makes a second writer wait for a row lock by default.
-  - A separate scheduler process can publish to clients through the backplane.
   - The host supports long-lived WebSocket connections.
   - A remote database's latency, and any idle suspension, are acceptable.
   - One API instance is enough for v1.
@@ -114,7 +113,7 @@ One entry each: what was chosen, why, what was rejected, and what would make me 
 - Can one session be in more than one active game?
 - The invite code format and when it stops working.
 - Colours on rematch, and whether offers expire.
-- Is the scheduler part of the first walking skeleton, how often it runs, and how exactly one instance is enforced.
+- Is the scheduler part of the first walking skeleton, and how often does it run?
 - A browser with the old app meeting a new server after a deploy.
 - The message protocol and what is logged.
 - The ranking of the quality attributes.
