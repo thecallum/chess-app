@@ -2,6 +2,8 @@
 
 Status: draft · Last updated: 2026-11-21
 
+> **Update 2026-11-21:** the scheduler is no longer a separate process. It runs as a hosted service inside the single API instance, which avoids needing a SignalR backplane in v1. Where this document says "separate scheduler", read it that way. [architecture.md](architecture.md) is current.
+
 The working document for v1: scope, rules, architecture, data, flows, risks and open questions. [architecture.md](architecture.md) is the shorter summary and may drift from this.
 
 **Contents**
