@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import { LinkedBoards } from "~/components/linked-boards";
 import { Button } from "~/components/ui/button";
 import { connectGameHub, type GameHub } from "~/lib/game-hub";
 
@@ -32,7 +33,7 @@ export default function PlaySetup() {
   }, []);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:gap-6 sm:px-6 sm:py-16">
+    <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:gap-6 sm:px-6 sm:py-16">
       <Link
         to="/"
         className="-mx-2 w-fit px-2 py-2 text-sm text-muted-foreground hover:underline"
@@ -54,6 +55,7 @@ export default function PlaySetup() {
           Ping
         </Button>
       </div>
+      <LinkedBoards />
       {popup && (
         <div
           role="status"

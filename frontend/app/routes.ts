@@ -5,4 +5,6 @@ export default [
   index("routes/home.tsx"),
   // Client-only.
   route("play/setup", "routes/play.setup.tsx"),
+  // Dev page comparing board styles.
+  route("dev/boards", "routes/dev.boards.tsx"),
 ] satisfies RouteConfig;
