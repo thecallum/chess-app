@@ -5,4 +5,6 @@ export default [
   index("routes/home.tsx"),
   // Client-only.
   route("play/setup", "routes/play.setup.tsx"),
+  // Temporary: font pair options.
+  route("dev/fonts", "routes/dev.fonts.tsx"),
 ] satisfies RouteConfig;
