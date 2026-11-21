@@ -20,7 +20,7 @@ Decide and add only what the next steps need:
 ## 3. Walking skeleton: create and join a game
 - [ ] Data: `games` and `moves` tables
 - [ ] HTTP: create a game (colour choice, invite code) and join by code, with errors for invalid, expired and full
-- [ ] Frontend: homepage, start page (play a friend, disabled online and AI placeholders), waiting screen with the code
+- [x] Frontend: homepage, start page (play a friend, disabled online and AI placeholders), waiting screen with the code (scaffolded, no requests yet)
 - [ ] Game channel: join over WebSocket, receive current state, "opponent joined" event
 
 ## 4. Playing a game
