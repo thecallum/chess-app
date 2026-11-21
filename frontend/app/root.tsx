@@ -7,8 +7,26 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import instrumentSerif from "@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url";
+import instrumentSerifItalic from "@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2?url";
+import jetbrainsMono from "@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url";
+import manrope from "@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url";
+import { Header } from "./components/header";
 import type { Route } from "./+types/root";
 import "./app.css";
+
+// Preload the fonts used above the fold, so they download with the CSS and the
+// page doesn't flash a fallback font first. Only the latin subsets are listed.
+export const links: Route.LinksFunction = () =>
+  [instrumentSerif, instrumentSerifItalic, jetbrainsMono, manrope].map(
+    (href) => ({
+      rel: "preload",
+      href,
+      as: "font",
+      type: "font/woff2",
+      crossOrigin: "anonymous",
+    }),
+  );
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
+        <Header />
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -49,11 +68,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main>
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
+      <h1 className="text-2xl font-semibold">{message}</h1>
+      <p className="mt-2 text-muted-foreground">{details}</p>
       {stack && (
-        <pre>
+        <pre className="mt-4 overflow-x-auto rounded-xl border p-4 text-sm">
           <code>{stack}</code>
         </pre>
       )}

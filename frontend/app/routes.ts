@@ -1,3 +1,8 @@
-import { type RouteConfig, index } from "@react-router/dev/routes";
+import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
-export default [index("routes/home.tsx")] satisfies RouteConfig;
+export default [
+  // Pre-rendered to static HTML (see react-router.config.ts).
+  index("routes/home.tsx"),
+  // Client-only.
+  route("play/setup", "routes/play.setup.tsx"),
+] satisfies RouteConfig;

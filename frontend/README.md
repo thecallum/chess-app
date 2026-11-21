@@ -15,8 +15,9 @@ To pre-render another page, add its path to `prerender`.
 
 ```bash
 pnpm install
-pnpm dev         # http://localhost:5173, /api proxied to the backend
+pnpm dev         # http://localhost:5001, /api proxied to the backend
 pnpm build       # static output in build/client
+pnpm preview     # serve the build at http://localhost:5002
 pnpm typecheck
 pnpm lint
 pnpm format:check
