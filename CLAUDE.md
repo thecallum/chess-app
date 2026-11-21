@@ -13,6 +13,10 @@ A multiplayer web chess app (v1: guests, invite-code games, one time control). A
 - **Frontend:** React + TypeScript with Vite and React Router framework mode (`frontend/`). Entirely client-side, with no SSR server. Some routes are pre-rendered to static HTML and hydrated (`ssr: false` plus a `prerender` list). Others are client-only and use the SPA fallback.
 - **Local dev and deployment:** Docker and Docker Compose. Postgres is hosted separately in production.
 
+## UI rules
+
+- **Mobile first.** All UI is designed for small screens first, then enhanced for larger ones. In Tailwind, write the base classes for mobile and add `sm:`, `md:` and `lg:` prefixes to adapt upward. Don't write desktop styles and then override them for mobile (no `max-*:` breakpoints for layout). Touch targets must be comfortably tappable.
+
 ## Principles
 
 - The server is the authority for state, rules and clocks. Clients send move intents.

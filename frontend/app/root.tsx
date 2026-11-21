@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import { Header } from "./components/header";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -20,6 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
+        <Header />
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -49,11 +51,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main>
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
+      <h1 className="text-2xl font-semibold">{message}</h1>
+      <p className="mt-2 text-muted-foreground">{details}</p>
       {stack && (
-        <pre>
+        <pre className="mt-4 overflow-x-auto rounded-xl border p-4 text-sm">
           <code>{stack}</code>
         </pre>
       )}
