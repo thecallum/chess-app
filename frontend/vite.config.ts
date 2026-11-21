@@ -7,6 +7,8 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
+    port: 5001,
+    strictPort: true,
     proxy: {
       // Keeps the API same-origin in development, so cookies work.
       "/api": {

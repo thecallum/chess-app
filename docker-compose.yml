@@ -4,7 +4,10 @@ services:
     ports:
       - "5080:8080"
 
+  # Production-style frontend (nginx). Not started by default: in development
+  # run the Vite dev server instead. Start with `docker compose --profile full up`.
   frontend:
+    profiles: ["full"]
     build: ./frontend
     depends_on:
       - api

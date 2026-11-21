@@ -10,13 +10,20 @@ A multiplayer web chess app. Scope and decisions are in [docs/](docs/). The code
 
 ## Running it
 
-Everything in Docker:
+**Development** (frontend hot reload):
 
 ```bash
-docker compose up --build
+docker compose up -d --build api      # API on http://localhost:5080
+cd frontend && pnpm dev                              # http://localhost:5001, proxies /api to the API
+```
+
+**Everything in Docker** (production-style, nginx serves the static frontend):
+
+```bash
+docker compose --profile full up --build
 ```
 
 - Frontend: http://localhost:8080
 - API: http://localhost:5080/api/weatherforecast (also proxied at http://localhost:8080/api/weatherforecast)
 
-For day-to-day work, run the apps natively. See the component READMEs for their commands.
+See the component READMEs for native commands. The to-do list is in [docs/todo.md](docs/todo.md).
