@@ -146,3 +146,44 @@
     background-color: color-mix(in oklab, var(--accent-1) 30%, transparent);
   }
 }
+
+/* Page background: a faint chessboard that drifts slowly and fades out toward the
+   bottom of the screen. The outer layer is fixed and masked. The inner layer is
+   larger than the screen and slides by exactly one tile, so the loop is seamless
+   and the animation only uses transform. */
+.bg-board {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: radial-gradient(
+    ellipse 90% 70% at 50% 0%,
+    black 25%,
+    transparent 80%
+  );
+}
+
+.bg-board::before {
+  content: "";
+  position: absolute;
+  inset: -80px;
+  background-image: repeating-conic-gradient(
+    color-mix(in oklab, var(--primary) 6%, transparent) 0 25%,
+    transparent 0 50%
+  );
+  background-size: 80px 80px;
+  animation: board-drift 16s linear infinite;
+}
+
+@keyframes board-drift {
+  to {
+    transform: translate(80px, 80px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-board::before {
+    animation: none;
+  }
+}
