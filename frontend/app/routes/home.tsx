@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "~/components/ui/button";
 
 export default function Home() {
   const [result, setResult] = useState<string>();
@@ -11,7 +12,7 @@ export default function Home() {
   return (
     <main>
       <h1>Home</h1>
-      <button onClick={loadWeather}>Get weather</button>
+      <Button onClick={loadWeather}>Get weather</Button>
       {result && <pre>{result}</pre>}
     </main>
   );
