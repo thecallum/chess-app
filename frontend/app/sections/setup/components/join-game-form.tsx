@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
-import { describeJoinError, joinGame } from "../lib/setup-api";
+import { describeJoinError } from "../describe-join-error";
+import { joinGameRequest } from "../requests/join-game-request";
 
-// `busy` is shared with the create form, so only one request runs at a time.
-export function JoinGameForm({
-  busy,
-  onBusyChange,
-}: {
-  busy: boolean;
-  onBusyChange: (busy: boolean) => void;
-}) {
+export function JoinGameForm() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
@@ -22,13 +16,11 @@ export function JoinGameForm({
       setError("Enter an invite code.");
       return;
     }
-    onBusyChange(true);
     try {
-      const game = await joinGame(value);
+      const game = await joinGameRequest(value);
       void navigate(`/play/games/${game.gameId}`);
     } catch (joinError) {
       setError(describeJoinError(joinError));
-      onBusyChange(false);
     }
   }
 
@@ -61,7 +53,6 @@ export function JoinGameForm({
         <Button
           type="submit"
           variant="outline"
-          disabled={busy}
           className="h-12 text-base sm:h-9 sm:text-sm"
         >
           Join game

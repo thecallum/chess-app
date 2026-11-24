@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router";
 import { CreateGameForm } from "~/sections/setup/components/create-game-form";
 import { JoinGameForm } from "~/sections/setup/components/join-game-form";
@@ -10,9 +9,6 @@ export function meta() {
 }
 
 export default function PlayWithFriends() {
-  // Shared so only one request runs at a time.
-  const [busy, setBusy] = useState(false);
-
   return (
     <SetupCard>
       <Link
@@ -24,8 +20,8 @@ export default function PlayWithFriends() {
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
         Play a friend
       </h1>
-      <CreateGameForm busy={busy} onBusyChange={setBusy} />
-      <JoinGameForm busy={busy} onBusyChange={setBusy} />
+      <CreateGameForm />
+      <JoinGameForm />
     </SetupCard>
   );
 }

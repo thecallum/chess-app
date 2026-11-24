@@ -1,31 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
-import { createGame } from "../lib/setup-api";
+import { createGameRequest } from "../requests/create-game-request";
 import { colours, type Colour } from "../modes";
 
-// `busy` is shared with the join form, so only one request runs at a time.
-export function CreateGameForm({
-  busy,
-  onBusyChange,
-}: {
-  busy: boolean;
-  onBusyChange: (busy: boolean) => void;
-}) {
+export function CreateGameForm() {
   const navigate = useNavigate();
   const [colour, setColour] = useState<Colour>("random");
   const [error, setError] = useState<string>();
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    onBusyChange(true);
     setError(undefined);
     try {
-      const game = await createGame(colour);
+      const game = await createGameRequest(colour);
       void navigate(`/play/games/${game.gameId}`);
     } catch {
       setError("Couldn't create the game. Please try again.");
-      onBusyChange(false);
     }
   }
 
@@ -64,7 +55,6 @@ export function CreateGameForm({
 
       <Button
         type="submit"
-        disabled={busy}
         className="h-12 w-full text-base font-semibold sm:h-11 sm:w-auto sm:self-start sm:px-6"
       >
         Create game
