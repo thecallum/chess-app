@@ -15,13 +15,9 @@ export function meta() {
 
 export default function Home() {
   return (
-    <>
-      {/* Homepage-only background (see .bg-board in app.css). */}
-      <div aria-hidden className="bg-board" />
-      <main className="font-manrope mx-auto flex max-w-3xl flex-col gap-10 px-4 py-8 sm:gap-12 sm:px-6 sm:py-20">
-        <Hero />
-        <HowItWorks />
-      </main>
-    </>
+    <main className="font-manrope mx-auto flex max-w-3xl flex-col gap-10 px-4 py-8 sm:gap-12 sm:px-6 sm:py-20">
+      <Hero />
+      <HowItWorks />
+    </main>
   );
 }
