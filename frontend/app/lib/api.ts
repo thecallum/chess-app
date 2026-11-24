@@ -18,7 +18,7 @@ export class ApiError extends Error {
 // The custom header is our cross-site protection (see architecture notes).
 const headers = {
   "Content-Type": "application/json",
-  "X-Requested-With": "chess-app",
+  "X-CSRF": "1",
 };
 
 let session: Promise<void> | undefined;
@@ -55,16 +55,10 @@ export const getGame = (id: string) => request<Game>(`/games/${id}`);
 
 export function describeJoinError(error: unknown): string {
   if (error instanceof ApiError) {
-    switch (error.code) {
-      case "invalid_code":
-        return "That invite code doesn't exist.";
-      case "expired":
-        return "That invite code has expired.";
-      case "not_joinable":
-        return "That game has already started.";
-      case "game_full":
-        return "That game is already full.";
-    }
+    if (error.code === "invalid_code") return "That invite code doesn't exist.";
+
+    // Not joinable, game full, or anything else the server rejects.
+    return "Unable to join game.";
   }
   return "Something went wrong. Please try again.";
 }

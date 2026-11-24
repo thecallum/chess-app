@@ -250,7 +250,6 @@ function FriendSetup({ onBack }: { onBack: () => void }) {
               setCodeError(undefined);
             }}
             placeholder="Enter an invite code"
-            maxLength={12}
             aria-label="Invite code"
             aria-invalid={codeError ? true : undefined}
             autoCapitalize="off"
