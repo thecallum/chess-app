@@ -32,7 +32,7 @@ function ensureSession() {
   return session;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   await ensureSession();
   const res = await fetch(`/api${path}`, { ...init, headers });
   const body = (await res.json().catch(() => ({}))) as {
@@ -40,25 +40,4 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } & T;
   if (!res.ok) throw new ApiError(res.status, body.error ?? "unknown");
   return body;
-}
-
-export const createGame = (colour: "white" | "black" | "random") =>
-  request<Game>("/games", { method: "POST", body: JSON.stringify({ colour }) });
-
-export const joinGame = (code: string) =>
-  request<Game>("/games/join", {
-    method: "POST",
-    body: JSON.stringify({ code }),
-  });
-
-export const getGame = (id: string) => request<Game>(`/games/${id}`);
-
-export function describeJoinError(error: unknown): string {
-  if (error instanceof ApiError) {
-    if (error.code === "invalid_code") return "That invite code doesn't exist.";
-
-    // Not joinable, game full, or anything else the server rejects.
-    return "Unable to join game.";
-  }
-  return "Something went wrong. Please try again.";
 }

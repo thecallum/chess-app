@@ -1,7 +1,7 @@
 import { Chess, type Square } from "chess.js";
 import { useState } from "react";
 import { Chessboard } from "react-chessboard";
-import { defaultBoardTheme, type BoardTheme } from "~/lib/board-themes";
+import { defaultBoardTheme, type BoardTheme } from "../lib/board-themes";
 
 // Our own board component, so the rest of the app doesn't depend on
 // react-chessboard directly. Controlled: the parent owns the position (`fen`).

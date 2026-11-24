@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { useEffect, useRef, useState } from "react";
-import { ChessBoard, type MoveIntent } from "~/components/chess-board";
-import { connectGameHub, type GameHub } from "~/lib/game-hub";
+import { ChessBoard, type MoveIntent } from "./chess-board";
+import { connectGameHub, type GameHub } from "../lib/game-hub";
 
 // One board for this player. Moves made here are sent over the game's channel,
 // and moves from the opponent arrive on it. Scaffolding: the server just
