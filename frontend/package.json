@@ -12,7 +12,11 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:ci": "E2E_BUILD=1 playwright test",
+    "e2e": "pnpm e2e:up && pnpm test:e2e",
+    "e2e:up": "docker compose -f ../docker-compose.e2e.yml up -d --build --wait",
+    "e2e:down": "docker compose -f ../docker-compose.e2e.yml down"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -14,7 +14,7 @@ function spaFallbackForPreview(): Plugin {
       const root = join(server.config.root, "build/client");
       server.middlewares.use((req, _res, next) => {
         const path = (req.url ?? "/").split("?")[0];
-        const isPage = !/\.[a-z0-9]+$/i.test(path);
+        const isPage = !/\.[a-z0-9]+$/i.test(path) && !path.startsWith("/api/");
         const prerendered = existsSync(join(root, path, "index.html"));
         if (req.method === "GET" && isPage && !prerendered) {
           req.url = "/__spa-fallback.html";
@@ -33,11 +33,11 @@ export default defineConfig({
   // Unique port so another project's cached files or service worker on the
   // default 4173 can't be served by mistake.
   preview: {
-    port: 5002,
+    port: Number(process.env.PORT ?? 5002),
     strictPort: true,
   },
   server: {
-    port: 5001,
+    port: Number(process.env.PORT ?? 5001),
     strictPort: true,
     proxy: {
       // Keeps the API same-origin in development, so cookies work.
