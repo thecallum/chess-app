@@ -1,20 +1,13 @@
 import { ChevronRight } from "lucide-react";
+import { Link } from "react-router";
 import type { Mode } from "../modes";
 
-export function ModeButton({
-  option,
-  onSelect,
-}: {
-  option: Mode;
-  onSelect: () => void;
-}) {
+const className =
+  "group flex min-h-24 items-center justify-between gap-3 rounded-xl bg-primary p-4 text-left text-primary-foreground outline-none transition hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-accent-1/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale disabled:hover:bg-primary";
+
+function Content({ option }: { option: Mode }) {
   return (
-    <button
-      type="button"
-      disabled={!option.enabled}
-      onClick={onSelect}
-      className="group flex min-h-24 items-center justify-between gap-3 rounded-xl bg-primary p-4 text-left text-primary-foreground outline-none transition hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-accent-1/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale disabled:hover:bg-primary"
-    >
+    <>
       <span className="flex items-center gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-1 text-primary">
           <option.icon aria-hidden className="size-5" />
@@ -28,6 +21,23 @@ export function ModeButton({
         aria-hidden
         className="size-5 shrink-0 text-primary-foreground/60 transition-transform group-enabled:group-hover:translate-x-0.5"
       />
-    </button>
+    </>
+  );
+}
+
+// Enabled modes are links to their setup page. Coming-soon modes stay
+// disabled buttons, since a link can't be disabled.
+export function ModeButton({ option }: { option: Mode }) {
+  if (!option.enabled || !option.path) {
+    return (
+      <button type="button" disabled className={className}>
+        <Content option={option} />
+      </button>
+    );
+  }
+  return (
+    <Link to={option.path} className={className}>
+      <Content option={option} />
+    </Link>
   );
 }

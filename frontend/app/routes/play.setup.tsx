@@ -1,4 +1,6 @@
-import { SetupFlow } from "~/sections/setup/setup-flow";
+import { ModeButton } from "~/sections/setup/components/mode-button";
+import { SetupCard } from "~/sections/setup/components/setup-card";
+import { modes } from "~/sections/setup/modes";
 
 // Client-only route: not in the prerender list.
 export function meta() {
@@ -7,10 +9,33 @@ export function meta() {
 
 export default function PlaySetup() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-16">
-      <div className="flex min-h-[28rem] flex-col gap-6 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm sm:min-h-[36rem] sm:gap-8 sm:p-8">
-        <SetupFlow />
+    <SetupCard>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Start a game
+      </h1>
+      <div className="flex flex-col gap-3">
+        {modes
+          .filter((option) => option.enabled)
+          .map((option) => (
+            <ModeButton key={option.id} option={option} />
+          ))}
       </div>
-    </main>
+      <section
+        aria-labelledby="coming-soon"
+        className="flex flex-col gap-3 pt-4 sm:pt-6"
+      >
+        <h2
+          id="coming-soon"
+          className="text-sm font-medium text-muted-foreground uppercase"
+        >
+          Coming soon
+        </h2>
+        {modes
+          .filter((option) => !option.enabled)
+          .map((option) => (
+            <ModeButton key={option.id} option={option} />
+          ))}
+      </section>
+    </SetupCard>
   );
 }

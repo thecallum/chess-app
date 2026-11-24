@@ -9,6 +9,8 @@ export type Mode = {
   description: string;
   icon: LucideIcon;
   enabled: boolean;
+  // The mode's setup page. Only set once the mode is built.
+  path?: string;
 };
 
 export const modes: Mode[] = [
@@ -18,6 +20,7 @@ export const modes: Mode[] = [
     description: "Share an invite code.",
     icon: Users,
     enabled: true,
+    path: "/play/setup/play-with-friends",
   },
   {
     id: "online",

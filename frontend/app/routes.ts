@@ -5,5 +5,9 @@ export default [
   index("routes/home.tsx"),
   // Client-only.
   route("play/setup", "routes/play.setup.tsx"),
+  route(
+    "play/setup/play-with-friends",
+    "routes/play.setup.play-with-friends.tsx",
+  ),
   route("play/games/:gameId", "routes/play.game.tsx"),
 ] satisfies RouteConfig;
