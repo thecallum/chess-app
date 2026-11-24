@@ -60,8 +60,10 @@ export function describeJoinError(error: unknown): string {
         return "That invite code doesn't exist.";
       case "expired":
         return "That invite code has expired.";
-      case "game_full":
+      case "not_joinable":
         return "That game has already started.";
+      case "game_full":
+        return "That game is already full.";
     }
   }
   return "Something went wrong. Please try again.";

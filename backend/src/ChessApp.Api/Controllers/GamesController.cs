@@ -1,6 +1,9 @@
+using ChessApp.Api.Auth;
+using ChessApp.Api.Controllers.Responses;
 using ChessApp.Api.Models;
-using ChessApp.Api.Session;
 using ChessApp.Api.UseCases;
+using ChessApp.Api.UseCases.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChessApp.Api.Controllers;
@@ -9,51 +12,64 @@ public sealed record CreateGameRequest(ColourChoice Colour = ColourChoice.Random
 
 public sealed record JoinGameRequest(string? Code);
 
-// A game as seen by one of its players.
-public sealed record GameResponse(Guid GameId, string Code, string Role, string Colour, string Status)
-{
-    public static GameResponse For(Game game, Guid playerId) => new(
-        game.Id,
-        game.Code,
-        game.HostId == playerId ? "host" : "guest",
-        game.ColourOf(playerId).ToString().ToLowerInvariant(),
-        game.Status == GameStatus.WaitingForOpponent ? "waiting" : "in_progress");
-}
-
 [ApiController]
+[Authorize]
 [Route("api/games")]
 public sealed class GamesController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult Create(CreateGameRequest request, [FromServices] CreateGame createGame)
-    {
-        if (GuestSession.Read(HttpContext) is not { } playerId) return Unauthorized();
+    private readonly ICreateGameUseCase _createGameUseCase;
+    private readonly IJoinGameUseCase _joinGameUseCase;
+    private readonly IGetGameUseCase _getGameUseCase;
 
-        return Ok(GameResponse.For(createGame.Execute(playerId, request.Colour), playerId));
+    public GamesController(ICreateGameUseCase createGameUseCase, IJoinGameUseCase joinGameUseCase, IGetGameUseCase getGameUseCase)
+    {
+        _createGameUseCase = createGameUseCase;
+        _joinGameUseCase = joinGameUseCase;
+        _getGameUseCase = getGameUseCase;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateGameRequest request)
+    {
+        var playerId = User.PlayerId();
+
+        var game = await _createGameUseCase.ExecuteAsync(playerId, request.Colour);
+        var response = GameResponseFactory.Create(game, playerId);
+
+        return Ok(response);
     }
 
     [HttpPost("join")]
-    public IActionResult Join(JoinGameRequest request, [FromServices] JoinGame joinGame)
+    public async Task<IActionResult> Join(JoinGameRequest request)
     {
-        if (GuestSession.Read(HttpContext) is not { } playerId) return Unauthorized();
+        var playerId = User.PlayerId();
 
-        var result = joinGame.Execute(playerId, request.Code ?? "");
-        return result.Error switch
-        {
-            null => Ok(GameResponse.For(result.Game!, playerId)),
-            JoinError.InvalidCode => NotFound(new { error = "invalid_code" }),
-            JoinError.Expired => StatusCode(StatusCodes.Status410Gone, new { error = "expired" }),
-            _ => Conflict(new { error = "game_full" }),
-        };
+        var result = await _joinGameUseCase.ExecuteAsync(playerId, request.Code ?? "");
+
+        if (result.Error == JoinError.InvalidCode) return NotFound(new { error = "invalid_code" });
+
+        if (result.Error == JoinError.NotJoinable) return Conflict(new { error = "not_joinable" });
+
+        if (result.Error is not null) return Conflict(new { error = "game_full" });
+
+        var response = GameResponseFactory.Create(result.Game!, playerId);
+
+        return Ok(response);
     }
 
     [HttpGet("{id:guid}")]
-    public IActionResult Get(Guid id, [FromServices] GetGame getGame)
+    public async Task<IActionResult> Get(Guid id)
     {
-        if (GuestSession.Read(HttpContext) is not { } playerId) return Unauthorized();
+        var playerId = User.PlayerId();
 
-        return getGame.Execute(playerId, id) is { } game
-            ? Ok(GameResponse.For(game, playerId))
-            : NotFound(new { error = "not_found" });
+        var result = await _getGameUseCase.ExecuteAsync(playerId, id);
+
+        if (result.Error == GetGameError.NotFound) return NotFound(new { error = "not_found" });
+
+        if (result.Error is not null) return StatusCode(StatusCodes.Status403Forbidden, new { error = "access_denied" });
+
+        var response = GameResponseFactory.Create(result.Game!, playerId);
+
+        return Ok(response);
     }
 }

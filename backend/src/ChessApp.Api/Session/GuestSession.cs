@@ -8,6 +8,7 @@ public static class GuestSession
     public static Guid? Read(HttpContext context) =>
         Guid.TryParse(context.Request.Cookies[CookieName], out var id) ? id : null;
 
+    // TODO: review the cookie config before deploying:
     public static Guid EnsureIssued(HttpContext context)
     {
         if (Read(context) is { } existing) return existing;
