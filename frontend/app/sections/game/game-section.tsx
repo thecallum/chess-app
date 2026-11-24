@@ -1,7 +1,8 @@
 import { useParams } from "react-router";
 import { GameBoard } from "./components/game-board";
 import { GameNotFound } from "./components/game-not-found";
-import { GameStatus } from "./components/game-status";
+import { GameInProgress } from "./components/game-in-progress";
+import { WaitingForOpponent } from "./components/waiting-for-opponent";
 import { useGame } from "./use-game";
 
 // The game page's content: loads the game named in the URL and shows it.
@@ -16,7 +17,11 @@ export function GameSection() {
 
   return (
     <>
-      <GameStatus game={load.game} />
+      {load.game.status === "waiting" ? (
+        <WaitingForOpponent game={load.game} />
+      ) : (
+        <GameInProgress game={load.game} />
+      )}
       <GameBoard gameId={load.game.gameId} colour={load.game.colour} />
     </>
   );

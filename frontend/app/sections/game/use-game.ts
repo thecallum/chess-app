@@ -3,9 +3,7 @@ import type { Game } from "~/lib/api";
 import { getGame } from "./lib/game-api";
 
 export type GameLoad =
-  | { state: "loading" }
-  | { state: "error" }
-  | { state: "ready"; game: Game };
+  { state: "loading" } | { state: "error" } | { state: "ready"; game: Game };
 
 export function useGame(gameId: string | undefined): GameLoad {
   const [load, setLoad] = useState<GameLoad>({ state: "loading" });
