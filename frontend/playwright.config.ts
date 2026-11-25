@@ -12,7 +12,18 @@ const build = !!process.env.E2E_BUILD;
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
-  use: { baseURL },
+  // One retry in CI, so a flaky spec leaves a trace behind (see `use`).
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never" }]]
+    : [["list"]],
+  use: {
+    baseURL,
+    // Screenshots of failed specs land in test-results/ and the HTML report,
+    // which CI uploads as an artifact.
+    screenshot: "only-on-failure",
+    trace: "on-first-retry",
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: build ? "pnpm build && pnpm preview" : "pnpm dev",
