@@ -9,7 +9,14 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:ci": "E2E_BUILD=1 playwright test",
+    "e2e": "pnpm e2e:up && pnpm test:e2e",
+    "e2e:up": "docker compose -f ../docker-compose.e2e.yml up -d --build --wait",
+    "e2e:down": "docker compose -f ../docker-compose.e2e.yml down"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -33,7 +40,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
     "@react-router/dev": "^8.5.2",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/node": "^22",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -42,10 +53,12 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
+    "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.73.0",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "vitest": "^5.1.1"
   },
   "packageManager": "pnpm@12.11.2"
 }

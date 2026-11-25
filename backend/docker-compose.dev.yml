@@ -2,6 +2,24 @@
 # (hot reload) instead of the published image. Used by the Makefile.
 # Relative paths resolve against the root docker-compose.yml.
 services:
+  # Local Postgres. Production uses a separately hosted one.
+  # Published on 5433 so it doesn't clash with a Postgres already on 5432.
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: chessapp
+      POSTGRES_PASSWORD: chessapp
+      POSTGRES_DB: chessapp
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chessapp"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
   api:
     image: mcr.microsoft.com/dotnet/sdk:10.0
     build: !reset null
@@ -11,9 +29,14 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      ConnectionStrings__Default: Host=db;Database=chessapp;Username=chessapp;Password=chessapp
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/src/backend
       - nuget:/root/.nuget/packages
 
 volumes:
   nuget:
+  pgdata:

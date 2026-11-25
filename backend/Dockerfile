@@ -1,9 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ChessApp.sln ./
-COPY src/ChessApp.Core/*.csproj src/ChessApp.Core/
 COPY src/ChessApp.Api/*.csproj src/ChessApp.Api/
-COPY tests/ChessApp.Core.Tests/*.csproj tests/ChessApp.Core.Tests/
+COPY tests/ChessApp.Api.Tests/*.csproj tests/ChessApp.Api.Tests/
 RUN dotnet restore
 COPY . .
 RUN dotnet publish src/ChessApp.Api -c Release -o /out/api --no-restore

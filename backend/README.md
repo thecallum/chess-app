@@ -4,9 +4,8 @@
 
 | Project | Purpose |
 |---|---|
-| `src/ChessApp.Api` | ASP.NET Core: HTTP API and the SignalR game hub (`/api/hubs/game`, ping demo only). |
-| `src/ChessApp.Core` | Domain logic. No framework dependencies. Empty for now. |
-| `tests/ChessApp.Core.Tests` | xUnit tests for Core. No tests yet. |
+| `src/ChessApp.Api` | ASP.NET Core: HTTP API (`Controllers/`, `UseCases/`, `Gateways/`, `Models/`) and the SignalR game hub (`/api/hubs/game`, ping demo only). |
+| `tests/ChessApp.Api.Tests` | xUnit tests. No tests yet. |
 
 ## Commands
 

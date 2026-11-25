@@ -138,6 +138,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 resets buttons to the default cursor. Disabled ones keep theirs. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
   html {
     @apply font-sans;
   }
