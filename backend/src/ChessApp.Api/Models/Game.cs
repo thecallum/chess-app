@@ -25,7 +25,8 @@ public class Game
         if (colour == PieceColour.White)
         {
             WhiteClientId = ownerId;
-        } else
+        }
+        else
         {
             BlackClientId = ownerId;
         }
@@ -35,32 +36,32 @@ public class Game
 
     public Guid Id { get; } = Guid.NewGuid();
 
-    public Guid? WhiteClientId {get;set;}
-    public Guid? BlackClientId {get;set;}
+    public Guid? WhiteClientId { get; set; }
+    public Guid? BlackClientId { get; set; }
 
-    public DateTime CreatedAt {get; } = DateTime.UtcNow;
-    public DateTime? StartedAt {get;set;}
-    public DateTime? CompletedAt {get;set;}
-    public DateTime? LastMoveAt {get;set;}
+    public DateTime CreatedAt { get; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public DateTime? LastMoveAt { get; set; }
 
-    public int WhiteTimeRemainingMs {get;set;} = TEN_MINUTES_IN_MS;
-    public int BlackTimeRemainingMs {get;set;} = TEN_MINUTES_IN_MS;
+    public int WhiteTimeRemainingMs { get; set; } = TEN_MINUTES_IN_MS;
+    public int BlackTimeRemainingMs { get; set; } = TEN_MINUTES_IN_MS;
 
-    public int CurrentMove {get;set;} = 1;
-    public GameStatus Status {get;set;} = GameStatus.WaitingForOpponent;
+    public int CurrentMove { get; set; } = 1;
+    public GameStatus Status { get; set; } = GameStatus.WaitingForOpponent;
 
     // Set when the game is completed. WinningPlayerId is null for a draw.
-    public GameResult? Result {get;set;}
-    public Guid? WinningPlayerId {get;set;}
+    public GameResult? Result { get; set; }
+    public Guid? WinningPlayerId { get; set; }
 
-    public string? GameInviteCode {get;set;}
+    public string? GameInviteCode { get; set; }
 
     // The position as a FEN string, from the chess engine.
-    public string GameState {get;set;} = string.Empty;
+    public string GameState { get; set; } = string.Empty;
 
     // Every legal move in order, as sent by the client. Moves[0] is move 1.
     // Stored as a Postgres text[] column.
-    public List<string> Moves {get;set;} = [];
+    public List<string> Moves { get; set; } = [];
 
     public virtual bool IsParticipant(Guid playerId) => WhiteClientId == playerId || BlackClientId == playerId;
 
