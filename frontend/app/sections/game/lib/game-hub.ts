@@ -78,12 +78,19 @@ export function connectGameHub(): GameHub {
 
   let errorHandler: (message: string) => void = () => {};
 
+  // The game this connection is for. The server can send GameState to a player
+  // directly (when their opponent joins), and that reaches every tab they have
+  // open, so ignore state for a different game.
+  let joinedGameId: string | undefined;
+  const isThisGame = (state: GameStateMessage) =>
+    !joinedGameId || state.gameId === joinedGameId;
+
   // The move number sent with each move, so the server can reject a move made
   // on an old position. Set from GameState, then moved on by every accepted
   // move: ours (MoveConfirmed) and the opponent's (MoveMade).
   let currentMove: number | undefined;
   connection.on("GameState", (state: GameStateMessage) => {
-    currentMove = state.currentMove;
+    if (isThisGame(state)) currentMove = state.currentMove;
   });
   const nextMove = () => {
     if (currentMove !== undefined) currentMove++;
@@ -95,7 +102,6 @@ export function connectGameHub(): GameHub {
   let moveInFlight = false;
 
   // Group membership is per connection, so rejoin after a reconnect.
-  let joinedGameId: string | undefined;
   const rejoin = () =>
     joinedGameId
       ? connection
@@ -148,7 +154,10 @@ export function connectGameHub(): GameHub {
         moveInFlight = false;
       }
     },
-    onGameState: (handler) => connection.on("GameState", handler),
+    onGameState: (handler) =>
+      connection.on("GameState", (state: GameStateMessage) => {
+        if (isThisGame(state)) handler(state);
+      }),
     onMoveMade: (handler) =>
       connection.on("MoveMade", (notation: string) => {
         const move = fromLongNotation(notation);

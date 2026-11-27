@@ -8,8 +8,9 @@ namespace ChessApp.Api.Tests.UseCases;
 public class JoinGameUseCaseTests
 {
     private readonly Mock<IGamesGateway> _gateway = new();
+    private readonly Mock<IGameNotifier> _gameNotifier = new();
 
-    private JoinGameUseCase NewUseCase() => new(_gateway.Object);
+    private JoinGameUseCase NewUseCase() => new(_gateway.Object, _gameNotifier.Object);
 
     [Fact]
     public async Task Execute_WhenGatewayJoinsGame_ReturnsGame()

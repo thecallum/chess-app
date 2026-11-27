@@ -27,6 +27,7 @@ builder.Services.AddScoped<IGamesGateway, GamesGateway>();
 // Scoped: the board holds one position, so each request gets its own.
 builder.Services.AddScoped<IChessBoard, ChessBoardWrapper>();
 builder.Services.AddScoped<IChessEngine, ChessEngine>();
+builder.Services.AddSingleton<IGameNotifier, GameNotifier>();
 builder.Services.AddHostedService<DatabaseMigrator>();
 builder.Services.AddScoped<ICreateGameUseCase, CreateGameUseCase>();
 builder.Services.AddScoped<IJoinGameUseCase, JoinGameUseCase>();

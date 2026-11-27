@@ -17,9 +17,13 @@ import {
 export function GameBoard({
   gameId,
   colour,
+  onStatusChange,
 }: {
   gameId: string;
   colour: "white" | "black";
+  // Called with the live status, so the page can hide the invite panel once
+  // the opponent joins.
+  onStatusChange?: (status: GameStateMessage["status"]) => void;
 }) {
   // The position from the server. Undefined until GameState arrives, so the board
   // isn't drawn at the starting position first and then animated to the real one.
@@ -35,6 +39,10 @@ export function GameBoard({
   // The current time, updated on each tick while a clock runs.
   const [now, setNow] = useState(() => Date.now());
   const hub = useRef<GameHub>(null);
+
+  useEffect(() => {
+    if (status) onStatusChange?.(status);
+  }, [status, onStatusChange]);
 
   useEffect(() => {
     const addLog = (text: string) =>
