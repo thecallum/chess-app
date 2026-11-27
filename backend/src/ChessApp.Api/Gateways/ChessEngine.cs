@@ -5,17 +5,26 @@ using ChessApp.Api.Models;
 namespace ChessApp.Api.Gateways;
 
 // Rules engine backed by the Gera.Chess library (github.com/Geras1mleo/Chess).
+// The board is injected, so tests can mock it.
 public sealed class ChessEngine : IChessEngine
 {
+    private readonly IChessBoard _board;
+
+    public ChessEngine(IChessBoard board)
+    {
+        _board = board;
+    }
+
     public string InitGame()
     {
-        return new ChessBoard().ToFen();
+        // A new board is at the starting position.
+        return _board.ToFen();
     }
 
     public MakeMoveResult MakeMove(string gameState, string move)
     {
         // Load the game from the stored state (fetched from the database).
-        if (!ChessBoard.TryLoadFromFen(gameState, out var board, AutoEndgameRules.All))
+        if (!_board.LoadFromFen(gameState))
         {
             return new(false, null, null, null);
         }
@@ -24,7 +33,7 @@ public sealed class ChessEngine : IChessEngine
         {
             // Apply the move. The library returns false for some illegal moves, and
             // throws a ChessException for others (a malformed move, an empty square).
-            if (!board.Move(new Move(move)))
+            if (!_board.Move(move))
             {
                 return new(false, null, null, null);
             }
@@ -35,7 +44,7 @@ public sealed class ChessEngine : IChessEngine
         }
 
         // Legal. Report the new position, and whether the game ended.
-        return new(true, board.ToFen(), ToGameResult(board.EndGame), ToWinner(board.EndGame));
+        return new(true, _board.ToFen(), ToGameResult(_board.EndGame), ToWinner(_board.EndGame));
     }
 
     private static GameResult? ToGameResult(EndGameInfo? endGame) => endGame?.EndgameType switch

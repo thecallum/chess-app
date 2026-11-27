@@ -8,8 +8,9 @@ namespace ChessApp.Api.Tests.UseCases;
 public class CreateGameUseCaseTests
 {
     private readonly Mock<IGamesGateway> _gateway = new();
+    private readonly Mock<IChessEngine> _chessEngine = new();
 
-    private CreateGameUseCase NewUseCase() => new(_gateway.Object);
+    private CreateGameUseCase NewUseCase() => new(_gateway.Object, _chessEngine.Object);
 
     [Fact]
     public async Task Execute_WhenChoosingWhite_SeatsPlayerAsWhite()

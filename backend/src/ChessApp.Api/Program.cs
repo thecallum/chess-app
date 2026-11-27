@@ -24,7 +24,9 @@ builder.Services.AddDbContext<ChessDbContext>((services, options) =>
     options.UseNpgsql(services.GetRequiredService<IConfiguration>().GetConnectionString("Default")
         ?? throw new InvalidOperationException("Missing connection string ConnectionStrings:Default.")));
 builder.Services.AddScoped<IGamesGateway, GamesGateway>();
-builder.Services.AddSingleton<IChessEngine, ChessEngine>();
+// Scoped: the board holds one position, so each request gets its own.
+builder.Services.AddScoped<IChessBoard, ChessBoardWrapper>();
+builder.Services.AddScoped<IChessEngine, ChessEngine>();
 builder.Services.AddHostedService<DatabaseMigrator>();
 builder.Services.AddScoped<ICreateGameUseCase, CreateGameUseCase>();
 builder.Services.AddScoped<IJoinGameUseCase, JoinGameUseCase>();
