@@ -73,9 +73,6 @@ describe("GameSection", () => {
     renderSection();
 
     // Assert
-    expect(
-      screen.getByRole("heading", { name: /waiting for your opponent/i }),
-    ).toBeInTheDocument();
     expect(screen.getByText("Board")).toBeInTheDocument();
   });
 });

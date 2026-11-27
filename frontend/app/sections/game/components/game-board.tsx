@@ -1,14 +1,18 @@
 import { Chess } from "chess.js";
 import { useEffect, useRef, useState } from "react";
+import type { Game } from "~/lib/api";
 import { ChessBoard, type MoveIntent } from "./chess-board";
+import { EventLogList } from "./event-log-list";
 import { PlayerClock } from "./game-clocks";
 import { GameOverMenu } from "./game-over-menu";
 import { GameStatus } from "./game-status";
+import { WaitingForOpponent } from "./waiting-for-opponent";
 import {
   connectGameHub,
   type GameHub,
   type GameStateMessage,
 } from "../lib/game-hub";
+import { useEventLogs } from "../use-event-logs";
 
 type Clocks = Pick<
   GameStateMessage,
@@ -18,21 +22,12 @@ type Clocks = Pick<
 // One board for this player. Everything shown comes from the server's GameState,
 // which arrives after connecting and after every change. Moves made here show
 // straight away, and the next GameState confirms or replaces them.
-export function GameBoard({
-  gameId,
-  colour,
-  onStatusChange,
-}: {
-  gameId: string;
-  colour: "white" | "black";
-  // Called with the live status, so the page can hide the invite panel once
-  // the opponent joins.
-  onStatusChange?: (status: GameStateMessage["status"]) => void;
-}) {
+export function GameBoard({ game }: { game: Game }) {
+  const { gameId, colour } = game;
   // The position from the server. Undefined until GameState arrives, so the board
   // isn't drawn at the starting position first and then animated to the real one.
   const [fen, setFen] = useState<string>();
-  const [log, setLog] = useState<string[]>([]);
+  const { eventLogs, addLog } = useEventLogs();
   // The server's clocks as of the last move. Undefined until GameState arrives.
   const [clocks, setClocks] = useState<Clocks>();
   const [status, setStatus] = useState<GameStateMessage["status"]>();
@@ -45,16 +40,6 @@ export function GameBoard({
   const hub = useRef<GameHub>(null);
 
   useEffect(() => {
-    if (status) onStatusChange?.(status);
-  }, [status, onStatusChange]);
-
-  useEffect(() => {
-    const addLog = (text: string) =>
-      setLog((entries) => [
-        ...entries,
-        `${new Date().toLocaleTimeString()}  ${text}`,
-      ]);
-
     const connection = connectGameHub();
     hub.current = connection;
     connection.onStatusChange((connected) =>
@@ -83,22 +68,22 @@ export function GameBoard({
       hub.current = null;
       void connection.stop();
     };
-  }, [gameId]);
+  }, [gameId, addLog]);
 
   function play(move: MoveIntent) {
     // Show the move straight away, and undo it if the server rejects it.
     if (!fen) return;
     const previousFen = fen;
-    const game = new Chess(fen);
-    game.move(move);
-    const movedFen = game.fen();
+    const moved = new Chess(fen);
+    moved.move(move);
+    const movedFen = moved.fen();
     setFen(movedFen);
 
     hub.current?.sendMove(gameId, move).catch((error: Error) => {
       // Only undo if the board still shows this move. A GameState from the
       // server may already have replaced it (on a timeout, say), and that wins.
       setFen((current) => (current === movedFen ? previousFen : current));
-      setLog((entries) => [...entries, `Error: ${error.message}`]);
+      addLog(`Error: ${error.message}`);
     });
   }
 
@@ -152,6 +137,11 @@ export function GameBoard({
 
   return (
     <>
+      {/* The status from the page load until the hub sends its own, so the
+          invite panel shows straight away and goes when the opponent joins. */}
+      {(status ?? game.status) === "waiting" && (
+        <WaitingForOpponent game={game} />
+      )}
       {/* Three rows: status, both clocks, board. The status and clocks have
           fixed heights (5rem, 3rem, plus 2 x 0.5rem gaps = 9rem). The board is
           a square at the container's full width, so the container is never
@@ -201,21 +191,7 @@ export function GameBoard({
           onClose={() => setMenuClosed(true)}
         />
       )}
-      <section
-        aria-labelledby="event-log"
-        className="mt-4 rounded-xl border p-4"
-      >
-        <h2 id="event-log" className="text-sm font-semibold">
-          Event log
-        </h2>
-        <ol className="mt-2 max-h-48 space-y-1 overflow-y-auto font-mono text-xs break-all">
-          {log.length === 0 ? (
-            <li className="text-muted-foreground">No events yet</li>
-          ) : (
-            log.map((entry, index) => <li key={index}>{entry}</li>)
-          )}
-        </ol>
-      </section>
+      <EventLogList entries={eventLogs} />
     </>
   );
 }
