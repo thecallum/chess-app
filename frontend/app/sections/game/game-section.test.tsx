@@ -2,13 +2,15 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GameSection } from "./game-section";
-import { useGame } from "./use-game";
+import { useGameQuery } from "./hooks/use-game-query";
 
 // The section only reads these fields from the query result.
-const mockQuery = (result: Partial<ReturnType<typeof useGame>>) =>
-  vi.mocked(useGame).mockReturnValue(result as ReturnType<typeof useGame>);
+const mockQuery = (result: Partial<ReturnType<typeof useGameQuery>>) =>
+  vi
+    .mocked(useGameQuery)
+    .mockReturnValue(result as ReturnType<typeof useGameQuery>);
 
-vi.mock("./use-game");
+vi.mock("./hooks/use-game-query");
 // The board talks to the game hub, which isn't what's under test here.
 vi.mock("./components/game-board", () => ({
   GameBoard: () => <p>Board</p>,

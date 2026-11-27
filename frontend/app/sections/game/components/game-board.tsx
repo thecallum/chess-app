@@ -2,12 +2,12 @@ import type { Game } from "~/lib/api";
 import { ChessBoard } from "./chess-board";
 import { ConnectionMenu } from "./connection-menu";
 import { GameOverMenu } from "./game-over-menu";
-import { GameStatus } from "./game-status";
+import { GameStatusBar } from "./game-status-bar";
 import { GameTimer } from "./game-timer";
 import { WaitingForOpponent } from "./waiting-for-opponent";
-import { useGameHandler } from "../use-game-handler";
+import { useGameHandler } from "../hooks/use-game-handler";
 
-// One board for this player. Everything shown comes from the game session.
+// One board for this player, driven by useGameHandler.
 export function GameBoard({ game }: { game: Game }) {
   const { colour } = game;
 
@@ -31,7 +31,7 @@ export function GameBoard({ game }: { game: Game }) {
       <div className="mx-auto grid w-full max-w-[calc(100dvh-14.5rem)] grid-rows-[5rem_3rem_auto] gap-2 sm:max-w-[calc(100dvh-16rem)]">
         {/* While waiting, the invite panel above is the page heading. */}
         {optimisticState && optimisticState.status !== "waiting" ? (
-          <GameStatus
+          <GameStatusBar
             status={optimisticState.status}
             turn={turn}
             colour={colour}

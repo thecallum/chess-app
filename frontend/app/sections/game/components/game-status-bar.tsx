@@ -1,7 +1,7 @@
-import type { Colour, Game } from "~/lib/api";
+import type { Colour, GameStatus } from "~/lib/api";
 
 // The page heading: whose move it is, or how the game ended.
-export function GameStatus({
+export function GameStatusBar({
   status,
   turn,
   colour,
@@ -9,7 +9,7 @@ export function GameStatus({
   result,
   winner,
 }: {
-  status: Game["status"];
+  status: GameStatus;
   turn: Colour;
   colour: Colour; // This player's colour.
   inCheck: boolean; // The side to move is in check.

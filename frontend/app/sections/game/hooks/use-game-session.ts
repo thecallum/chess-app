@@ -1,7 +1,7 @@
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import { useEffect, useRef, useState } from "react";
 import type { Colour, GameStatus } from "~/lib/api";
-import type { MoveIntent } from "./components/chess-board";
+import type { MoveIntent } from "../components/chess-board";
 
 export type GameStateMessage = {
   gameId: string;

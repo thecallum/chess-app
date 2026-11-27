@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { startTransition, useOptimistic } from "react";
 import type { Colour, Game } from "~/lib/api";
-import type { MoveIntent } from "./components/chess-board";
+import type { MoveIntent } from "../components/chess-board";
 import { useGameSession } from "./use-game-session";
 
 const applyMove = (gameState: string, intent: MoveIntent) => {
@@ -26,7 +26,7 @@ export function useGameHandler(game: Game) {
   function play(intent: MoveIntent) {
     if (!state) return;
 
-    // Wraps within an optimistic transiton
+    // Wraps within an optimistic transition
     // so move shows before server replies
     startTransition(async () => {
       showMove(applyMove(state.gameState, intent));

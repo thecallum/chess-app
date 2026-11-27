@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import type { Game } from "~/lib/api";
+import { MenuDialog } from "./menu-dialog";
 
 export function WaitingForOpponent({ game }: { game: Game }) {
   const [copied, setCopied] = useState(false);
@@ -16,39 +17,32 @@ export function WaitingForOpponent({ game }: { game: Game }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="waiting"
-        className="flex w-full flex-col gap-3 rounded-xl border bg-background p-6 text-center shadow-lg sm:max-w-sm"
+    <MenuDialog labelledBy="waiting">
+      <h1 id="waiting" className="text-2xl font-semibold tracking-tight">
+        Waiting for your opponent
+        <span aria-hidden className="animate-pulse">
+          …
+        </span>
+      </h1>
+      <p className="text-sm text-muted-foreground">
+        Share this code with a friend. They enter it on the start page to join.
+        You will play as {game.colour}. The code is valid for 24 hours.
+      </p>
+      <input
+        readOnly
+        value={game.code}
+        aria-label="Invite code"
+        onFocus={(e) => e.currentTarget.select()}
+        className="h-12 w-full rounded-lg border bg-background px-3 text-center font-mono text-base tracking-widest"
+      />
+      <Button
+        type="button"
+        size="lg"
+        className="h-12 w-full"
+        onClick={() => void copy()}
       >
-        <h1 id="waiting" className="text-2xl font-semibold tracking-tight">
-          Waiting for your opponent
-          <span aria-hidden className="animate-pulse">
-            …
-          </span>
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Share this code with a friend. They enter it on the start page to
-          join. You will play as {game.colour}. The code is valid for 24 hours.
-        </p>
-        <input
-          readOnly
-          value={game.code}
-          aria-label="Invite code"
-          onFocus={(e) => e.currentTarget.select()}
-          className="h-12 w-full rounded-lg border bg-background px-3 text-center font-mono text-base tracking-widest"
-        />
-        <Button
-          type="button"
-          size="lg"
-          className="h-12 w-full"
-          onClick={() => void copy()}
-        >
-          {copied ? "Copied" : "Copy code"}
-        </Button>
-      </section>
-    </div>
+        {copied ? "Copied" : "Copy code"}
+      </Button>
+    </MenuDialog>
   );
 }

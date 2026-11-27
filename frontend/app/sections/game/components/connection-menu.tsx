@@ -1,5 +1,6 @@
 import { Button } from "~/components/ui/button";
-import type { ConnectionStatus } from "../use-game-session";
+import type { ConnectionStatus } from "../hooks/use-game-session";
+import { MenuDialog } from "./menu-dialog";
 
 export function ConnectionMenu({
   status,
@@ -7,49 +8,36 @@ export function ConnectionMenu({
   status: Extract<ConnectionStatus, "reconnecting" | "disconnected">;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="connection"
-        className="flex w-full flex-col gap-3 rounded-xl border bg-background p-6 text-center shadow-lg sm:max-w-sm"
-      >
-        {status === "reconnecting" ? (
-          <>
-            <h2
-              id="connection"
-              className="text-2xl font-semibold tracking-tight"
-            >
-              Reconnecting
-              <span aria-hidden className="animate-pulse">
-                …
-              </span>
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Lost connection to the game. Trying again.
-            </p>
-          </>
-        ) : (
-          <>
-            <h2
-              id="connection"
-              className="text-2xl font-semibold tracking-tight"
-            >
-              Disconnected
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Couldn&apos;t reach the game.
-            </p>
-            <Button
-              size="lg"
-              className="h-12 w-full"
-              onClick={() => window.location.reload()}
-            >
-              Reload
-            </Button>
-          </>
-        )}
-      </section>
-    </div>
+    <MenuDialog labelledBy="connection">
+      {status === "reconnecting" ? (
+        <>
+          <h2 id="connection" className="text-2xl font-semibold tracking-tight">
+            Reconnecting
+            <span aria-hidden className="animate-pulse">
+              …
+            </span>
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Lost connection to the game. Trying again.
+          </p>
+        </>
+      ) : (
+        <>
+          <h2 id="connection" className="text-2xl font-semibold tracking-tight">
+            Disconnected
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Couldn&apos;t reach the game.
+          </p>
+          <Button
+            size="lg"
+            className="h-12 w-full"
+            onClick={() => window.location.reload()}
+          >
+            Reload
+          </Button>
+        </>
+      )}
+    </MenuDialog>
   );
 }

@@ -1,6 +1,6 @@
 import type { Colour } from "~/lib/api";
-import type { GameStateMessage } from "../use-game-session";
-import { useTimer } from "../use-timer";
+import type { GameStateMessage } from "../hooks/use-game-session";
+import { useTimer } from "../hooks/use-timer";
 
 export function GameTimer({
   state,
