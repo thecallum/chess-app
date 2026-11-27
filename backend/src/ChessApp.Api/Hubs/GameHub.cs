@@ -91,8 +91,8 @@ public class GameHub : Hub
         // Both players get the clocks as of this move, so their timers agree.
         await Clients.Group(Group(gameId)).SendAsync("ClockUpdate", new
         {
-            whiteTimeRemaining = result.Game!.WhiteTimeRemaining,
-            blackTimeRemaining = result.Game.BlackTimeRemaining,
+            whiteTimeRemainingMs = result.Game!.WhiteTimeRemainingMs,
+            blackTimeRemainingMs = result.Game.BlackTimeRemainingMs,
             lastMoveAt = result.Game.LastMoveAt,
         });
 

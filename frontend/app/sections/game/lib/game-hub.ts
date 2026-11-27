@@ -30,15 +30,15 @@ export type GameStateMessage = {
   gameState: string; // The position as a FEN string.
   currentMove: number; // The move number the server expects next.
   moves: string[]; // Every move played so far, in order. Not used yet.
-  whiteTimeRemaining: number; // Seconds, as of the last move.
-  blackTimeRemaining: number; // Seconds, as of the last move.
+  whiteTimeRemainingMs: number; // Milliseconds, as of the last move.
+  blackTimeRemainingMs: number; // Milliseconds, as of the last move.
   lastMoveAt: string | null; // ISO time of the last move. Null before the first.
 };
 
 // Sent to both players after every move: the clocks as of that move.
 export type ClockMessage = {
-  whiteTimeRemaining: number;
-  blackTimeRemaining: number;
+  whiteTimeRemainingMs: number;
+  blackTimeRemainingMs: number;
   lastMoveAt: string | null;
 };
 

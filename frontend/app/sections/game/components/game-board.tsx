@@ -23,7 +23,7 @@ export function GameBoard({
   // The server's clocks as of the last move. Undefined until GameState arrives.
   const [clocks, setClocks] = useState<ClockMessage>();
   const [gameOver, setGameOver] = useState(false);
-  // Ticks once a second while a clock runs, so the display updates.
+  // The current time, updated on each tick while a clock runs.
   const [now, setNow] = useState(() => Date.now());
   const hub = useRef<GameHub>(null);
 
@@ -45,8 +45,8 @@ export function GameBoard({
       // existed have an empty one, so keep the starting position for those.
       if (state.gameState) setFen(state.gameState);
       setClocks({
-        whiteTimeRemaining: state.whiteTimeRemaining,
-        blackTimeRemaining: state.blackTimeRemaining,
+        whiteTimeRemainingMs: state.whiteTimeRemainingMs,
+        blackTimeRemainingMs: state.blackTimeRemainingMs,
         lastMoveAt: state.lastMoveAt,
       });
       setGameOver(state.status === "completed");
@@ -87,14 +87,19 @@ export function GameBoard({
   }, [gameId]);
 
   function play(move: MoveIntent) {
+    // Show the move straight away, and undo it if the server rejects it.
+    const previousFen = fen;
     const game = new Chess(fen);
     game.move(move);
-    setFen(game.fen());
-    hub.current
-      ?.sendMove(gameId, move)
-      .catch((error: Error) =>
-        setLog((entries) => [...entries, `Error: ${error.message}`]),
-      );
+    const movedFen = game.fen();
+    setFen(movedFen);
+
+    hub.current?.sendMove(gameId, move).catch((error: Error) => {
+      // Only undo if the board still shows this move. A GameState from the
+      // server may already have replaced it, and that should win.
+      setFen((current) => (current === movedFen ? previousFen : current));
+      setLog((entries) => [...entries, `Error: ${error.message}`]);
+    });
   }
 
   const myTurn = new Chess(fen).turn() === (colour === "white" ? "w" : "b");
@@ -110,24 +115,26 @@ export function GameBoard({
         : "black"
       : null;
 
-  // Re-renders once a second while a clock runs.
+  // Re-renders every 200 ms while a clock runs, so each tab's display changes
+  // within a fifth of a second of the real time, whenever the tab was opened.
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
+    const timer = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer);
   }, [running]);
 
   // The running clock is the server's time minus the time since the last move,
   // worked out fresh each tick, so every tab shows the same and nothing drifts.
+  // All in milliseconds.
   const timeLeft = (side: "white" | "black") => {
     if (!clocks) return 0;
     const stored =
-      side === "white" ? clocks.whiteTimeRemaining : clocks.blackTimeRemaining;
+      side === "white"
+        ? clocks.whiteTimeRemainingMs
+        : clocks.blackTimeRemainingMs;
     if (side !== running || !clocks.lastMoveAt) return stored;
-    const secondsUsed = Math.floor(
-      (now - new Date(clocks.lastMoveAt).getTime()) / 1000,
-    );
-    return Math.max(0, stored - secondsUsed);
+    const msUsed = now - new Date(clocks.lastMoveAt).getTime();
+    return Math.max(0, stored - msUsed);
   };
 
   return (

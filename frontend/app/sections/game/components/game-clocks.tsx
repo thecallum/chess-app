@@ -1,4 +1,5 @@
 // Both players' clocks. Only shows the times; GameBoard counts them down.
+// Times are in milliseconds.
 export function GameClocks({
   white,
   black,
@@ -10,19 +11,19 @@ export function GameClocks({
 }) {
   return (
     <div className="mb-4 grid grid-cols-2 gap-2">
-      <Clock label="White" seconds={white} running={running === "white"} />
-      <Clock label="Black" seconds={black} running={running === "black"} />
+      <Clock label="White" ms={white} running={running === "white"} />
+      <Clock label="Black" ms={black} running={running === "black"} />
     </div>
   );
 }
 
 function Clock({
   label,
-  seconds,
+  ms,
   running,
 }: {
   label: string;
-  seconds: number;
+  ms: number;
   running: boolean;
 }) {
   return (
@@ -31,15 +32,15 @@ function Clock({
     >
       <p className="text-xs font-semibold">{label}</p>
       <p className="font-mono text-2xl tabular-nums" aria-live="off">
-        {formatTime(seconds)}
+        {formatTime(ms)}
       </p>
     </div>
   );
 }
 
-// 754 => "12:34"
-function formatTime(totalSeconds: number) {
-  const seconds = Math.max(0, totalSeconds);
+// 754_900 => "12:34". Whole seconds, rounded down.
+function formatTime(ms: number) {
+  const seconds = Math.floor(Math.max(0, ms) / 1000);
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }

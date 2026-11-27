@@ -23,8 +23,8 @@ public static class GameResponseFactory
             game.GameState,
             game.CurrentMove,
             game.Moves,
-            game.WhiteTimeRemaining,
-            game.BlackTimeRemaining,
+            game.WhiteTimeRemainingMs,
+            game.BlackTimeRemainingMs,
             game.LastMoveAt);
     }
 }

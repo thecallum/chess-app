@@ -26,8 +26,8 @@ public sealed class ChessDbContext : DbContext
 
             // Get-only properties aren't mapped by convention, so list them.
             game.Property(g => g.CreatedAt);
-            game.Property(g => g.WhiteTimeRemaining);
-            game.Property(g => g.BlackTimeRemaining);
+            game.Property(g => g.WhiteTimeRemainingMs);
+            game.Property(g => g.BlackTimeRemainingMs);
         });
     }
 }

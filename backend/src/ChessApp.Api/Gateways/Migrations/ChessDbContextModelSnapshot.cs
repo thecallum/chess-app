@@ -31,7 +31,7 @@ namespace ChessApp.Api.Gateways.Migrations
                     b.Property<Guid?>("BlackClientId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("BlackTimeRemaining")
+                    b.Property<int>("BlackTimeRemainingMs")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("CompletedAt")
@@ -72,7 +72,7 @@ namespace ChessApp.Api.Gateways.Migrations
                     b.Property<Guid?>("WhiteClientId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("WhiteTimeRemaining")
+                    b.Property<int>("WhiteTimeRemainingMs")
                         .HasColumnType("integer");
 
                     b.Property<Guid?>("WinningPlayerId")

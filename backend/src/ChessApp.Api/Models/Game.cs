@@ -11,7 +11,7 @@ public enum GameResult { Checkmate, Stalemate, InsufficientMaterial, FiftyMoveRu
 
 public sealed class Game
 {
-    private const int TEN_MINUTES_IN_SECONDS = 10 * 60;
+    private const int TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 
     // For EF Core to load a stored game.
     private Game()
@@ -41,8 +41,8 @@ public sealed class Game
     public DateTime? CompletedAt {get;set;}
     public DateTime? LastMoveAt {get;set;}
 
-    public int WhiteTimeRemaining {get;set;} = TEN_MINUTES_IN_SECONDS;
-    public int BlackTimeRemaining {get;set;} = TEN_MINUTES_IN_SECONDS;
+    public int WhiteTimeRemainingMs {get;set;} = TEN_MINUTES_IN_MS;
+    public int BlackTimeRemainingMs {get;set;} = TEN_MINUTES_IN_MS;
 
     public int CurrentMove {get;set;} = 1;
     public GameStatus Status {get;set;} = GameStatus.WaitingForOpponent;
@@ -78,21 +78,21 @@ public sealed class Game
         return playerColour == colourToMove;
     }
 
-    // The time since the last move comes off the player's clock.
+    // The time since the last move comes off the player's clock. All in milliseconds.
     public int CalculateTimeRemaining(PieceColour playerColour, DateTime now)
     {
         var timeRemaining = playerColour == PieceColour.White
-            ? WhiteTimeRemaining
-            : BlackTimeRemaining;
+            ? WhiteTimeRemainingMs
+            : BlackTimeRemainingMs;
 
         // First move of the game: there's no previous move to time from, so nothing
         // is subtracted. The clock starts once this move is made. Black's first move
         // is timed from white's first move.
         if (LastMoveAt is null) return timeRemaining;
 
-        var secondsUsed = (int)(now - LastMoveAt.Value).TotalSeconds;
+        var msUsed = (int)(now - LastMoveAt.Value).TotalMilliseconds;
 
-        return timeRemaining - secondsUsed;
+        return timeRemaining - msUsed;
     }
 
     // The first move starts the game.
@@ -107,11 +107,11 @@ public sealed class Game
     {
         if (mover == PieceColour.White)
         {
-            WhiteTimeRemaining = timeRemaining;
+            WhiteTimeRemainingMs = timeRemaining;
         }
         else
         {
-            BlackTimeRemaining = timeRemaining;
+            BlackTimeRemainingMs = timeRemaining;
         }
 
         Moves.Add(move);

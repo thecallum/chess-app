@@ -9,6 +9,6 @@ public sealed record GameResponse(
     string GameState,
     int CurrentMove,
     IReadOnlyList<string> Moves,
-    int WhiteTimeRemaining,
-    int BlackTimeRemaining,
+    int WhiteTimeRemainingMs,
+    int BlackTimeRemainingMs,
     DateTime? LastMoveAt);
