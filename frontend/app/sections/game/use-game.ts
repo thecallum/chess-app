@@ -1,23 +1,12 @@
-import { useEffect, useState } from "react";
-import type { Game } from "~/lib/api";
-import { getGame } from "./lib/game-api";
+import { useQuery } from "@tanstack/react-query";
+import { getGameByIdRequest } from "./requests/get-game-by-id-request";
 
-export type GameLoad =
-  { state: "loading" } | { state: "error" } | { state: "ready"; game: Game };
-
-export function useGame(gameId: string | undefined): GameLoad {
-  const [load, setLoad] = useState<GameLoad>({ state: "loading" });
-
-  useEffect(() => {
-    if (!gameId) return;
-    let cancelled = false;
-    getGame(gameId)
-      .then((game) => !cancelled && setLoad({ state: "ready", game }))
-      .catch(() => !cancelled && setLoad({ state: "error" }));
-    return () => {
-      cancelled = true;
-    };
-  }, [gameId]);
-
-  return load;
-}
+// Loads the game once over HTTP. Live state comes from the game hub after that.
+export const useGame = (gameId: string | undefined) =>
+  useQuery({
+    queryKey: ["game", gameId],
+    queryFn: () => getGameByIdRequest(gameId!),
+    enabled: !!gameId,
+    // A missing or forbidden game won't appear on a retry, so show it straight away.
+    retry: false,
+  });

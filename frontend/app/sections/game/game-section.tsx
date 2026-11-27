@@ -8,24 +8,24 @@ import { useGame } from "./use-game";
 // The game page's content: loads the game named in the URL and shows it.
 export function GameSection() {
   const { gameId } = useParams();
-  const load = useGame(gameId);
+  const { data: game, isPending, isError } = useGame(gameId);
   // The status from the game hub once it's connected. It replaces the one from
   // the page load, so the invite panel goes when the opponent joins.
   const [liveStatus, setLiveStatus] = useState<string>();
 
-  if (load.state === "loading") {
+  if (isPending) {
     return <p className="text-muted-foreground">Loading game…</p>;
   }
-  if (load.state === "error") return <GameNotFound />;
+  if (isError) return <GameNotFound />;
 
   return (
     <>
-      {(liveStatus ?? load.game.status) === "waiting" && (
-        <WaitingForOpponent game={load.game} />
+      {(liveStatus ?? game.status) === "waiting" && (
+        <WaitingForOpponent game={game} />
       )}
       <GameBoard
-        gameId={load.game.gameId}
-        colour={load.game.colour}
+        gameId={game.gameId}
+        colour={game.colour}
         onStatusChange={setLiveStatus}
       />
     </>

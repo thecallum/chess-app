@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GameSection } from "./game-section";
 import { useGame } from "./use-game";
 
+// The section only reads these fields from the query result.
+const mockQuery = (result: Partial<ReturnType<typeof useGame>>) =>
+  vi.mocked(useGame).mockReturnValue(result as ReturnType<typeof useGame>);
+
 vi.mock("./use-game");
 // The board talks to the game hub, which isn't what's under test here.
 vi.mock("./components/game-board", () => ({
@@ -25,7 +29,7 @@ describe("GameSection", () => {
 
   it("shows a loading message while loading", () => {
     // Arrange
-    vi.mocked(useGame).mockReturnValue({ state: "loading" });
+    mockQuery({ isPending: true, isError: false });
 
     // Act
     renderSection();
@@ -36,7 +40,7 @@ describe("GameSection", () => {
 
   it("shows the not found page with a link to set up a game when the game can't be loaded", () => {
     // Arrange
-    vi.mocked(useGame).mockReturnValue({ state: "error" });
+    mockQuery({ isPending: false, isError: true });
 
     // Act
     renderSection();
@@ -53,9 +57,10 @@ describe("GameSection", () => {
 
   it("shows the game when it is found and accessible", () => {
     // Arrange
-    vi.mocked(useGame).mockReturnValue({
-      state: "ready",
-      game: {
+    mockQuery({
+      isPending: false,
+      isError: false,
+      data: {
         gameId: "g1",
         code: "ABC123",
         role: "host",
