@@ -45,8 +45,16 @@ namespace ChessApp.Api.Gateways.Migrations
                     b.Property<string>("GameInviteCode")
                         .HasColumnType("text");
 
+                    b.Property<string>("GameState")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("LastMoveAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Result")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("timestamp with time zone");
@@ -61,6 +69,9 @@ namespace ChessApp.Api.Gateways.Migrations
 
                     b.Property<int>("WhiteTimeRemaining")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("WinningPlayerId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 

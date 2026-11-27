@@ -4,7 +4,10 @@ namespace ChessApp.Api.Models;
 
 public enum PieceColour { White, Black }
 
-public enum GameStatus { WaitingForOpponent, WaitingForFirstMove, InProgress }
+public enum GameStatus { WaitingForOpponent, WaitingForFirstMove, InProgress, Completed }
+
+// How a completed game ended.
+public enum GameResult { Checkmate, Stalemate, InsufficientMaterial, FiftyMoveRule, Repetition, Timeout }
 
 public sealed class Game
 {
@@ -38,13 +41,20 @@ public sealed class Game
     public DateTime? CompletedAt {get;set;}
     public DateTime? LastMoveAt {get;set;}
 
-    public int WhiteTimeRemaining {get;} = TEN_MINUTES_IN_SECONDS;
-    public int BlackTimeRemaining {get;} = TEN_MINUTES_IN_SECONDS;
+    public int WhiteTimeRemaining {get;set;} = TEN_MINUTES_IN_SECONDS;
+    public int BlackTimeRemaining {get;set;} = TEN_MINUTES_IN_SECONDS;
 
     public int CurrentMove {get;set;} = 1;
     public GameStatus Status {get;set;} = GameStatus.WaitingForOpponent;
 
+    // Set when the game is completed. WinningPlayerId is null for a draw.
+    public GameResult? Result {get;set;}
+    public Guid? WinningPlayerId {get;set;}
+
     public string? GameInviteCode {get;set;}
+
+    // The position as a FEN string, from the chess engine.
+    public string GameState {get;set;} = string.Empty;
 
     public bool IsParticipant(Guid playerId) => WhiteClientId == playerId || BlackClientId == playerId;
 

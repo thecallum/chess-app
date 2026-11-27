@@ -24,10 +24,13 @@ builder.Services.AddDbContext<ChessDbContext>((services, options) =>
     options.UseNpgsql(services.GetRequiredService<IConfiguration>().GetConnectionString("Default")
         ?? throw new InvalidOperationException("Missing connection string ConnectionStrings:Default.")));
 builder.Services.AddScoped<IGamesGateway, GamesGateway>();
+builder.Services.AddSingleton<IChessEngine, ChessEngine>();
 builder.Services.AddHostedService<DatabaseMigrator>();
 builder.Services.AddScoped<ICreateGameUseCase, CreateGameUseCase>();
 builder.Services.AddScoped<IJoinGameUseCase, JoinGameUseCase>();
 builder.Services.AddScoped<IGetGameUseCase, GetGameUseCase>();
+builder.Services.AddScoped<IConnectToGameUseCase, ConnectToGameUseCase>();
+builder.Services.AddScoped<ISendMoveUseCase, SendMoveUseCase>();
 
 var app = builder.Build();
 

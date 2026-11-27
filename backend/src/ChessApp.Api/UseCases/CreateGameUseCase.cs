@@ -7,8 +7,17 @@ namespace ChessApp.Api.UseCases;
 
 public enum ColourChoice { Random, White, Black }
 
-public sealed class CreateGameUseCase(IGamesGateway games) : ICreateGameUseCase
+public sealed class CreateGameUseCase : ICreateGameUseCase
 {
+    private readonly IGamesGateway _games;
+    private readonly IChessEngine _chessEngine;
+
+    public CreateGameUseCase(IGamesGateway games, IChessEngine chessEngine)
+    {
+        _games = games;
+        _chessEngine = chessEngine;
+    }
+
     public async Task<Game> ExecuteAsync(Guid playerId, ColourChoice choice)
     {
         var colour = choice switch
@@ -18,11 +27,13 @@ public sealed class CreateGameUseCase(IGamesGateway games) : ICreateGameUseCase
             _ => RandomNumberGenerator.GetInt32(2) == 0 ? PieceColour.White : PieceColour.Black,
         };
 
+        var gameState = _chessEngine.InitGame();
+
         // A clash on the invite code is very unlikely, but retry if it happens.
         while (true)
         {
-            var game = new Game(playerId, colour, NewInviteCode());
-            if (await games.CreateGameAsync(game)) return game;
+            var game = new Game(playerId, colour, NewInviteCode()) { GameState = gameState };
+            if (await _games.CreateGameAsync(game)) return game;
         }
     }
 

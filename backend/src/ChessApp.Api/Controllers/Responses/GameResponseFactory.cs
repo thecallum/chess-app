@@ -6,13 +6,20 @@ public static class GameResponseFactory
 {
     public static GameResponse Create(Game game, Guid playerId)
     {
-        var isWaiting = game.Status == GameStatus.WaitingForOpponent;
         var colour = game.WhiteClientId == playerId ? PieceColour.White : PieceColour.Black;
+
+        var status = game.Status switch
+        {
+            GameStatus.WaitingForOpponent => "waiting",
+            GameStatus.Completed => "completed",
+            _ => "in_progress",
+        };
 
         return new GameResponse(
             game.Id,
             game.GameInviteCode ?? "",
             colour.ToString().ToLowerInvariant(),
-            isWaiting ? "waiting" : "in_progress");
+            status,
+            game.GameState);
     }
 }

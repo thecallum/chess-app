@@ -58,6 +58,35 @@ public sealed class GamesGateway : IGamesGateway
         return new(await GetGameByIdAsync(game.Id), null);
     }
 
+    public async Task UpdateGameStateAsync(Game game)
+    {
+        await _db.Games
+            .Where(g => g.Id == game.Id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(g => g.GameState, game.GameState)
+                .SetProperty(g => g.CurrentMove, game.CurrentMove)
+                .SetProperty(g => g.LastMoveAt, game.LastMoveAt)
+                .SetProperty(g => g.WhiteTimeRemaining, game.WhiteTimeRemaining)
+                .SetProperty(g => g.BlackTimeRemaining, game.BlackTimeRemaining));
+    }
+
+    public async Task StartGameAsync(Guid gameId, DateTime startedAt)
+    {
+        await _db.Games
+            .Where(g => g.Id == gameId)
+            .ExecuteUpdateAsync(s => s.SetProperty(g => g.StartedAt, startedAt));
+    }
+
+    public async Task CompleteGameAsync(Guid gameId, GameResult result, Guid? winningPlayerId)
+    {
+        await _db.Games
+            .Where(g => g.Id == gameId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(g => g.Status, GameStatus.Completed)
+                .SetProperty(g => g.Result, (GameResult?)result)
+                .SetProperty(g => g.WinningPlayerId, winningPlayerId));
+    }
+
     private async Task<bool> SeatAsWhiteAsync(Guid gameId, Guid playerId)
     {
         var rows = await _db.Games
