@@ -1,6 +1,5 @@
 using ChessApp.Api.Auth;
 using ChessApp.Api.Controllers.Responses;
-using ChessApp.Api.Models;
 using ChessApp.Api.UseCases;
 using ChessApp.Api.UseCases.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +36,6 @@ public class GameHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        // removeGroup(clientId)
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -50,7 +48,6 @@ public class GameHub : Hub
         var result = await _connectToGameUseCase.ExecuteAsync(playerId, gameId);
 
         if (result.Error == ConnectToGameError.NotFound) throw new HubException("not_found");
-
         if (result.Error is not null) throw new HubException("access_denied");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, Group(gameId));
@@ -58,6 +55,8 @@ public class GameHub : Hub
         await Clients.Caller.SendAsync("GameState", GameResponseFactory.Create(result.Game!, playerId));
     }
 
+    // Only handles the request. The use case sends both players the new GameState,
+    // so a successful call just returns, and that's the sender's confirmation.
     public async Task SendMove(Guid gameId, int moveId, string move)
     {
         var playerId = Context.User!.PlayerId();
@@ -65,53 +64,14 @@ public class GameHub : Hub
         var result = await _sendMoveUseCase.ExecuteAsync(playerId, gameId, moveId, move);
         if (result.Error == SendMoveError.NotFound) throw new HubException("not_found");
 
-        // Already played (a double click or retry): confirm it again to the sender
-        // only, and don't tell the opponent twice.
-        if (result.Error == SendMoveError.RepeatedMove)
-        {
-            await Clients.Caller.SendAsync("MoveConfirmed", move);
-            return;
-        }
+        // Already played (a double click or retry). The use case re-sent the state.
+        if (result.Error == SendMoveError.RepeatedMove) return;
 
         if (result.Error == SendMoveError.GameNotActive) throw new HubException("game_not_active");
         if (result.Error == SendMoveError.StaleMove) throw new HubException("stale_move");
         if (result.Error == SendMoveError.NotYourTurn) throw new HubException("not_your_turn");
-        if (result.Error == SendMoveError.OutOfTime)
-        {
-            // The clocks first, so the timed-out player's shows 0:00.
-            await SendClockUpdateAsync(gameId, result.Game!);
-            await SendGameOverAsync(gameId, result);
-            throw new HubException("out_of_time");
-        }
+        if (result.Error == SendMoveError.OutOfTime) throw new HubException("out_of_time");
         if (result.Error == SendMoveError.IllegalMove) throw new HubException("illegal_move");
         if (result.Error is not null) throw new HubException("access_denied");
-
-        // The opponent (everyone else in the game) gets the move, and the sender
-        // gets a confirmation that it was accepted.
-        await Clients.OthersInGroup(Group(gameId)).SendAsync("MoveMade", move);
-        await Clients.Caller.SendAsync("MoveConfirmed", move);
-
-        // test
-
-        // Both players get the clocks as of this move, so their timers agree.
-        await SendClockUpdateAsync(gameId, result.Game!);
-
-        // If the move ended the game, both players are told how.
-        if (result.End is not null) await SendGameOverAsync(gameId, result);
     }
-
-    private Task SendClockUpdateAsync(Guid gameId, Game game) =>
-        Clients.Group(Group(gameId)).SendAsync("ClockUpdate", new
-        {
-            whiteTimeRemainingMs = game.WhiteTimeRemainingMs,
-            blackTimeRemainingMs = game.BlackTimeRemainingMs,
-            lastMoveAt = game.LastMoveAt,
-        });
-
-    private Task SendGameOverAsync(Guid gameId, SendMoveResult result) =>
-        Clients.Group(Group(gameId)).SendAsync("GameOver", new
-        {
-            result = result.End.ToString(),
-            winner = result.Winner?.ToString().ToLowerInvariant(),
-        });
 }

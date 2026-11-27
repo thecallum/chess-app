@@ -6,14 +6,18 @@ import { GameOverMenu } from "./game-over-menu";
 import { GameStatus } from "./game-status";
 import {
   connectGameHub,
-  type ClockMessage,
   type GameHub,
   type GameStateMessage,
 } from "../lib/game-hub";
 
-// One board for this player. Moves made here are sent over the game's channel,
-// and moves from the opponent arrive on it. Scaffolding: the server just
-// relays moves, so the position only lives in this browser.
+type Clocks = Pick<
+  GameStateMessage,
+  "whiteTimeRemainingMs" | "blackTimeRemainingMs" | "lastMoveAt"
+>;
+
+// One board for this player. Everything shown comes from the server's GameState,
+// which arrives after connecting and after every change. Moves made here show
+// straight away, and the next GameState confirms or replaces them.
 export function GameBoard({
   gameId,
   colour,
@@ -30,7 +34,7 @@ export function GameBoard({
   const [fen, setFen] = useState<string>();
   const [log, setLog] = useState<string[]>([]);
   // The server's clocks as of the last move. Undefined until GameState arrives.
-  const [clocks, setClocks] = useState<ClockMessage>();
+  const [clocks, setClocks] = useState<Clocks>();
   const [status, setStatus] = useState<GameStateMessage["status"]>();
   const [result, setResult] = useState<string | null>(null);
   const [winner, setWinner] = useState<GameStateMessage["winner"]>(null);
@@ -70,40 +74,7 @@ export function GameBoard({
       setResult(state.result);
       setWinner(state.winner);
     });
-    // A move means both players are in and the game has started.
-    const moveMade = () =>
-      setStatus((current) =>
-        current === "completed" ? current : "in_progress",
-      );
-    connection.onMoveConfirmed((move) => {
-      addLog(`MoveConfirmed ${JSON.stringify(move)}`);
-      moveMade();
-    });
-    connection.onGameOver((gameOver) => {
-      addLog(`GameOver ${JSON.stringify(gameOver)}`);
-      setStatus("completed");
-      setResult(gameOver.result);
-      setWinner(gameOver.winner);
-    });
-    connection.onClockUpdate((update) => {
-      addLog(`ClockUpdate ${JSON.stringify(update)}`);
-      setClocks(update);
-    });
     connection.onError((message) => addLog(`Error: ${message}`));
-    connection.onMoveMade((move) => {
-      addLog(`MoveMade ${JSON.stringify(move)}`);
-      moveMade();
-      setFen((current) => {
-        const game = new Chess(current);
-        try {
-          // The server sends a missing promotion as null.
-          game.move({ ...move, promotion: move.promotion ?? undefined });
-          return game.fen();
-        } catch {
-          return current;
-        }
-      });
-    });
     // Connects as soon as the page opens. The server answers with GameState.
     connection
       .connectToGame(gameId)
@@ -125,7 +96,7 @@ export function GameBoard({
 
     hub.current?.sendMove(gameId, move).catch((error: Error) => {
       // Only undo if the board still shows this move. A GameState from the
-      // server may already have replaced it, and that should win.
+      // server may already have replaced it (on a timeout, say), and that wins.
       setFen((current) => (current === movedFen ? previousFen : current));
       setLog((entries) => [...entries, `Error: ${error.message}`]);
     });

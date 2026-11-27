@@ -12,16 +12,9 @@ export type MoveMessage = { from: string; to: string; promotion?: string };
 const toLongNotation = ({ from, to, promotion }: MoveMessage) =>
   `{${from} - ${to}${promotion ? ` - =${promotion.toLowerCase()}` : ""}}`;
 
-// The reverse: the server sends the opponent's move back in the same notation.
-const fromLongNotation = (notation: string): MoveMessage | undefined => {
-  const match = /^\{([a-h][1-8]) - ([a-h][1-8])(?: - =([qrbn]))?\}$/.exec(
-    notation,
-  );
-  if (!match) return undefined;
-  return { from: match[1], to: match[2], promotion: match[3] };
-};
-
-// Sent to this connection only, after it connects to a game.
+// The only event the server sends: the whole game as this player sees it. It
+// comes after connecting, and after every change (a join, a move, the game
+// ending), so the page just shows the latest one.
 export type GameStateMessage = {
   gameId: string;
   code: string;
@@ -37,28 +30,11 @@ export type GameStateMessage = {
   winner: "white" | "black" | null; // Null for a draw or an unfinished game.
 };
 
-// Sent to both players after every move: the clocks as of that move.
-export type ClockMessage = {
-  whiteTimeRemainingMs: number;
-  blackTimeRemainingMs: number;
-  lastMoveAt: string | null;
-};
-
-// Sent to both players when a move ends the game. Winner is null for a draw.
-export type GameOverMessage = {
-  result: string;
-  winner: "white" | "black" | null;
-};
-
 export type GameHub = {
   ping(): Promise<void>;
   connectToGame(gameId: string): Promise<void>;
   sendMove(gameId: string, move: MoveMessage): Promise<void>;
   onGameState(handler: (state: GameStateMessage) => void): void;
-  onMoveMade(handler: (move: MoveMessage) => void): void;
-  onMoveConfirmed(handler: (move: unknown) => void): void;
-  onGameOver(handler: (gameOver: GameOverMessage) => void): void;
-  onClockUpdate(handler: (clocks: ClockMessage) => void): void;
   onPinged(handler: () => void): void;
   onError(handler: (message: string) => void): void;
   onStatusChange(handler: (connected: boolean) => void): void;
@@ -86,17 +62,11 @@ export function connectGameHub(): GameHub {
     !joinedGameId || state.gameId === joinedGameId;
 
   // The move number sent with each move, so the server can reject a move made
-  // on an old position. Set from GameState, then moved on by every accepted
-  // move: ours (MoveConfirmed) and the opponent's (MoveMade).
+  // on an old position. Always the one from the latest GameState.
   let currentMove: number | undefined;
   connection.on("GameState", (state: GameStateMessage) => {
     if (isThisGame(state)) currentMove = state.currentMove;
   });
-  const nextMove = () => {
-    if (currentMove !== undefined) currentMove++;
-  };
-  connection.on("MoveConfirmed", nextMove);
-  connection.on("MoveMade", nextMove);
 
   // Only one move is sent at a time, so a double click can't send it twice.
   let moveInFlight = false;
@@ -158,14 +128,6 @@ export function connectGameHub(): GameHub {
       connection.on("GameState", (state: GameStateMessage) => {
         if (isThisGame(state)) handler(state);
       }),
-    onMoveMade: (handler) =>
-      connection.on("MoveMade", (notation: string) => {
-        const move = fromLongNotation(notation);
-        if (move) handler(move);
-      }),
-    onMoveConfirmed: (handler) => connection.on("MoveConfirmed", handler),
-    onGameOver: (handler) => connection.on("GameOver", handler),
-    onClockUpdate: (handler) => connection.on("ClockUpdate", handler),
     onPinged: (handler) => connection.on("Pinged", handler),
     onError: (handler) => {
       errorHandler = handler;

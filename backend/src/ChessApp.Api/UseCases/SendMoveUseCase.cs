@@ -6,25 +6,25 @@ namespace ChessApp.Api.UseCases;
 
 public enum SendMoveError { NotFound, AccessDenied, GameNotActive, RepeatedMove, StaleMove, NotYourTurn, OutOfTime, IllegalMove }
 
-// End and Winner are set when the game ended, by this move or by running out of time.
-// Winner is null for a draw.
-public sealed record SendMoveResult(
-    Game? Game,
-    SendMoveError? Error,
-    GameResult? End = null,
-    PieceColour? Winner = null);
+public sealed record SendMoveResult(Game? Game, SendMoveError? Error);
 
 public sealed class SendMoveUseCase : ISendMoveUseCase
 {
     private readonly IGamesGateway _gamesGateway;
     private readonly IChessEngine _chessEngine;
     private readonly TimeProvider _timeProvider;
+    private readonly IGameNotifier _gameNotifier;
 
-    public SendMoveUseCase(IGamesGateway games, IChessEngine chessEngine, TimeProvider timeProvider)
+    public SendMoveUseCase(
+        IGamesGateway games,
+        IChessEngine chessEngine,
+        TimeProvider timeProvider,
+        IGameNotifier gameNotifier)
     {
         _gamesGateway = games;
         _chessEngine = chessEngine;
         _timeProvider = timeProvider;
+        _gameNotifier = gameNotifier;
     }
 
     public async Task<SendMoveResult> ExecuteAsync(Guid playerId, Guid gameId, int moveId, string move)
@@ -37,6 +37,10 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         var playerColour = game.WhiteClientId == playerId ? PieceColour.White : PieceColour.Black;
 
         var gameStateError = ValidateGameState(game, playerId, playerColour, moveId, move);
+
+        // A resend of a move that already went through: send the current state again,
+        // which re-syncs the client. The hub treats it as a success.
+        if (gameStateError == SendMoveError.RepeatedMove) await _gameNotifier.SendGameStateAsync(game);
         if (gameStateError is not null) return new(null, gameStateError);
 
         var timeRemaining = game.CalculateTimeRemaining(playerColour, now);
@@ -44,10 +48,11 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         // Out of time: the move isn't played, and the opponent wins.
         if (timeRemaining < 0)
         {
-            var winnerColour = playerColour == PieceColour.White ? PieceColour.Black : PieceColour.White;
             game.TimeOut(playerColour, now);
             if (!await _gamesGateway.SaveAsync(game, moveId)) return new(null, SendMoveError.StaleMove);
-            return new(game, SendMoveError.OutOfTime, GameResult.Timeout, winnerColour);
+
+            await _gameNotifier.SendGameStateAsync(game);
+            return new(game, SendMoveError.OutOfTime);
         }
 
         var result = _chessEngine.MakeMove(game.GameState, move);
@@ -63,8 +68,10 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         // only goes through if nobody else changed the game since it was read.
         if (!await _gamesGateway.SaveAsync(game, moveId)) return new(null, SendMoveError.StaleMove);
 
-        // End and Winner are null unless the move ended the game.
-        return new(game, null, result.End, result.Winner);
+        // Both players get the new state: position, clocks, and the result if it ended.
+        await _gameNotifier.SendGameStateAsync(game);
+
+        return new(game, null);
     }
 
     // Null when the player is in the game, the game is active, the client is on the
@@ -74,7 +81,7 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         if (!game.IsParticipant(playerId)) return SendMoveError.AccessDenied;
 
         // A resend of a move that already went through. Checked before IsGameActive so
-        // a resent game-ending move is still recognised. The hub treats it as a success.
+        // a resent game-ending move is still recognised.
         if (game.IsRepeatOfLastMove(moveId, playerColour, move)) return SendMoveError.RepeatedMove;
 
         if (!game.IsGameActive()) return SendMoveError.GameNotActive;

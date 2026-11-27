@@ -30,6 +30,22 @@ public class JoinGameUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_WhenGatewayJoinsGame_SendsGameState()
+    {
+        // Arrange
+        var playerId = Guid.NewGuid();
+        var game = new Game(Guid.NewGuid(), PieceColour.White, "ABC");
+        _gateway.Setup(g => g.JoinGameByCodeAsync("ABC", playerId))
+            .ReturnsAsync(new JoinGameByCodeResult(game, null));
+
+        // Act
+        await NewUseCase().ExecuteAsync(playerId, "ABC");
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(game), Times.Once);
+    }
+
+    [Fact]
     public async Task Execute_PassesTrimmedUpperCaseCodeToGateway()
     {
         // Arrange
