@@ -1,8 +1,11 @@
+export type Colour = "white" | "black";
+export type ColourChoice = Colour | "random";
+
 export type Game = {
   gameId: string;
   code: string;
   role: "host" | "guest";
-  colour: "white" | "black";
+  colour: Colour;
   status: "waiting" | "in_progress";
 };
 

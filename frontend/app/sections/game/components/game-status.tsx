@@ -1,4 +1,4 @@
-type Colour = "white" | "black";
+import type { Colour } from "~/lib/api";
 
 // The page heading: whose move it is, or how the game ended.
 export function GameStatus({

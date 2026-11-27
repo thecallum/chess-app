@@ -1,10 +1,8 @@
 import { Chess } from "chess.js";
 import { startTransition, useOptimistic } from "react";
-import type { Game } from "~/lib/api";
+import type { Colour, Game } from "~/lib/api";
 import type { MoveIntent } from "./components/chess-board";
 import { useGameSession } from "./use-game-session";
-
-type Colour = Game["colour"];
 
 const applyMove = (gameState: string, intent: MoveIntent) => {
   const game = new Chess(gameState);

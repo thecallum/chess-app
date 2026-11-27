@@ -1,11 +1,12 @@
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import { useEffect, useRef, useState } from "react";
+import type { Colour } from "~/lib/api";
 import type { MoveIntent } from "./components/chess-board";
 
 export type GameStateMessage = {
   gameId: string;
   code: string;
-  colour: "white" | "black";
+  colour: Colour;
   status: "waiting" | "in_progress" | "completed";
   gameState: string;
   currentMove: number;
@@ -14,7 +15,7 @@ export type GameStateMessage = {
   blackTimeRemainingMs: number;
   lastMoveAt: string | null;
   result: string | null;
-  winner: "white" | "black" | null;
+  winner: Colour | null;
 };
 
 export type MoveResult = { ok: true } | { ok: false; error: string };

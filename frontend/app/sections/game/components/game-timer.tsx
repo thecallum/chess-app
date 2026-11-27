@@ -1,3 +1,4 @@
+import type { Colour } from "~/lib/api";
 import type { GameStateMessage } from "../use-game-session";
 import { useTimer } from "../use-timer";
 
@@ -6,7 +7,7 @@ export function GameTimer({
   colour,
 }: {
   state: GameStateMessage | undefined;
-  colour: GameStateMessage["colour"];
+  colour: Colour;
 }) {
   const timer = useTimer(state);
 

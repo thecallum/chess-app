@@ -1,6 +1,7 @@
 import { Chess, type Square } from "chess.js";
 import { useState } from "react";
 import { Chessboard } from "react-chessboard";
+import type { Colour } from "~/lib/api";
 import { defaultBoardTheme, type BoardTheme } from "../lib/board-themes";
 
 // Our own board component, so the rest of the app doesn't depend on
@@ -13,7 +14,7 @@ type Props = {
   // Labels the board for screen readers. Not shown.
   title: string;
   gameState: string;
-  orientation?: "white" | "black";
+  orientation?: Colour;
   // Only the active board can be moved on.
   active: boolean;
   onMove: (move: MoveIntent) => void;

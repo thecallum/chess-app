@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Button, buttonVariants } from "~/components/ui/button";
+import type { Colour } from "~/lib/api";
 import { outcomeText, resultText } from "./game-status";
 
 // Shown over the whole page when the game ends, centred on screen. On a phone
@@ -12,8 +13,8 @@ export function GameOverMenu({
   colour,
 }: {
   result: string | null;
-  winner: "white" | "black" | null;
-  colour: "white" | "black";
+  winner: Colour | null;
+  colour: Colour;
 }) {
   const [closed, setClosed] = useState(false);
   if (closed) return null;
