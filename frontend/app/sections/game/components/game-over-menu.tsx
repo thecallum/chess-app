@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { outcomeText, resultText } from "./game-status";
@@ -9,13 +10,14 @@ export function GameOverMenu({
   result,
   winner,
   colour,
-  onClose,
 }: {
   result: string | null;
   winner: "white" | "black" | null;
   colour: "white" | "black";
-  onClose: () => void;
 }) {
+  const [closed, setClosed] = useState(false);
+  if (closed) return null;
+
   return (
     // z-[60] puts it above the sticky site header (z-50).
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
@@ -44,7 +46,7 @@ export function GameOverMenu({
           variant="outline"
           size="lg"
           className="h-12 w-full"
-          onClick={onClose}
+          onClick={() => setClosed(true)}
         >
           View board
         </Button>
