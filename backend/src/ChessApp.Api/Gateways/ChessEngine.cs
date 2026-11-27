@@ -12,7 +12,7 @@ public sealed class ChessEngine : IChessEngine
         return new ChessBoard().ToFen();
     }
 
-    public MakeMoveResult MakeMove(string gameState, Move move)
+    public MakeMoveResult MakeMove(string gameState, string move)
     {
         // Load the game from the stored state (fetched from the database).
         if (!ChessBoard.TryLoadFromFen(gameState, out var board, AutoEndgameRules.All))
@@ -20,23 +20,31 @@ public sealed class ChessEngine : IChessEngine
             return new(false, null, null, null);
         }
 
-        // Apply the move. The library returns false for an illegal move.
-        if (!board.Move(move))
+        try
+        {
+            // Apply the move. The library returns false for some illegal moves, and
+            // throws a ChessException for others (a malformed move, an empty square).
+            if (!board.Move(new Move(move)))
+            {
+                return new(false, null, null, null);
+            }
+        }
+        catch (ChessException)
         {
             return new(false, null, null, null);
         }
 
         // Legal. Report the new position, and whether the game ended.
-        return new(true, board.ToFen(), ToGameEnd(board.EndGame), ToWinner(board.EndGame));
+        return new(true, board.ToFen(), ToGameResult(board.EndGame), ToWinner(board.EndGame));
     }
 
-    private static GameEnd? ToGameEnd(EndGameInfo? endGame) => endGame?.EndgameType switch
+    private static GameResult? ToGameResult(EndGameInfo? endGame) => endGame?.EndgameType switch
     {
-        EndgameType.Checkmate => GameEnd.Checkmate,
-        EndgameType.Stalemate => GameEnd.Stalemate,
-        EndgameType.InsufficientMaterial => GameEnd.InsufficientMaterial,
-        EndgameType.FiftyMoveRule => GameEnd.FiftyMoveRule,
-        EndgameType.Repetition => GameEnd.Repetition,
+        EndgameType.Checkmate => GameResult.Checkmate,
+        EndgameType.Stalemate => GameResult.Stalemate,
+        EndgameType.InsufficientMaterial => GameResult.InsufficientMaterial,
+        EndgameType.FiftyMoveRule => GameResult.FiftyMoveRule,
+        EndgameType.Repetition => GameResult.Repetition,
         _ => null,
     };
 

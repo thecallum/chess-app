@@ -20,6 +20,11 @@ public static class GameResponseFactory
             game.GameInviteCode ?? "",
             colour.ToString().ToLowerInvariant(),
             status,
-            game.GameState);
+            game.GameState,
+            game.CurrentMove,
+            game.Moves,
+            game.WhiteTimeRemaining,
+            game.BlackTimeRemaining,
+            game.LastMoveAt);
     }
 }

@@ -58,33 +58,27 @@ public sealed class GamesGateway : IGamesGateway
         return new(await GetGameByIdAsync(game.Id), null);
     }
 
-    public async Task UpdateGameStateAsync(Game game)
+    public async Task<bool> SaveAsync(Game game, int expectedMove)
     {
-        await _db.Games
-            .Where(g => g.Id == game.Id)
+        var rows = await _db.Games
+            .Where(g => g.Id == game.Id
+                && g.CurrentMove == expectedMove
+                && g.Status != GameStatus.Completed)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(g => g.GameState, game.GameState)
+                .SetProperty(g => g.Moves, game.Moves)
                 .SetProperty(g => g.CurrentMove, game.CurrentMove)
-                .SetProperty(g => g.LastMoveAt, game.LastMoveAt)
                 .SetProperty(g => g.WhiteTimeRemaining, game.WhiteTimeRemaining)
-                .SetProperty(g => g.BlackTimeRemaining, game.BlackTimeRemaining));
-    }
+                .SetProperty(g => g.BlackTimeRemaining, game.BlackTimeRemaining)
+                .SetProperty(g => g.LastMoveAt, game.LastMoveAt)
+                .SetProperty(g => g.StartedAt, game.StartedAt)
+                .SetProperty(g => g.CompletedAt, game.CompletedAt)
+                .SetProperty(g => g.Status, game.Status)
+                .SetProperty(g => g.Result, game.Result)
+                .SetProperty(g => g.WinningPlayerId, game.WinningPlayerId));
 
-    public async Task StartGameAsync(Guid gameId, DateTime startedAt)
-    {
-        await _db.Games
-            .Where(g => g.Id == gameId)
-            .ExecuteUpdateAsync(s => s.SetProperty(g => g.StartedAt, startedAt));
-    }
-
-    public async Task CompleteGameAsync(Guid gameId, GameResult result, Guid? winningPlayerId)
-    {
-        await _db.Games
-            .Where(g => g.Id == gameId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(g => g.Status, GameStatus.Completed)
-                .SetProperty(g => g.Result, (GameResult?)result)
-                .SetProperty(g => g.WinningPlayerId, winningPlayerId));
+        // No row matched: another request changed the game after it was read.
+        return rows == 1;
     }
 
     private async Task<bool> SeatAsWhiteAsync(Guid gameId, Guid playerId)

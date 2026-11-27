@@ -57,13 +57,23 @@ public class GameHub : Hub
         await Clients.Caller.SendAsync("GameState", GameResponseFactory.Create(result.Game!, playerId));
     }
 
-    public async Task SendMove(Guid gameId, string move)
+    public async Task SendMove(Guid gameId, int moveId, string move)
     {
         var playerId = Context.User!.PlayerId();
 
-        var result = await _sendMoveUseCase.ExecuteAsync(playerId, gameId, move);
+        var result = await _sendMoveUseCase.ExecuteAsync(playerId, gameId, moveId, move);
         if (result.Error == SendMoveError.NotFound) throw new HubException("not_found");
+
+        // Already played (a double click or retry): confirm it again to the sender
+        // only, and don't tell the opponent twice.
+        if (result.Error == SendMoveError.RepeatedMove)
+        {
+            await Clients.Caller.SendAsync("MoveConfirmed", move);
+            return;
+        }
+
         if (result.Error == SendMoveError.GameNotActive) throw new HubException("game_not_active");
+        if (result.Error == SendMoveError.StaleMove) throw new HubException("stale_move");
         if (result.Error == SendMoveError.NotYourTurn) throw new HubException("not_your_turn");
         if (result.Error == SendMoveError.OutOfTime)
         {
@@ -77,6 +87,14 @@ public class GameHub : Hub
         // gets a confirmation that it was accepted.
         await Clients.OthersInGroup(Group(gameId)).SendAsync("MoveMade", move);
         await Clients.Caller.SendAsync("MoveConfirmed", move);
+
+        // Both players get the clocks as of this move, so their timers agree.
+        await Clients.Group(Group(gameId)).SendAsync("ClockUpdate", new
+        {
+            whiteTimeRemaining = result.Game!.WhiteTimeRemaining,
+            blackTimeRemaining = result.Game.BlackTimeRemaining,
+            lastMoveAt = result.Game.LastMoveAt,
+        });
 
         // If the move ended the game, both players are told how.
         if (result.End is not null) await SendGameOverAsync(gameId, result);

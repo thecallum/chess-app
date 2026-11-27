@@ -26,8 +26,20 @@ export type GameStateMessage = {
   gameId: string;
   code: string;
   colour: "white" | "black";
-  status: "waiting" | "in_progress";
+  status: "waiting" | "in_progress" | "completed";
   gameState: string; // The position as a FEN string.
+  currentMove: number; // The move number the server expects next.
+  moves: string[]; // Every move played so far, in order. Not used yet.
+  whiteTimeRemaining: number; // Seconds, as of the last move.
+  blackTimeRemaining: number; // Seconds, as of the last move.
+  lastMoveAt: string | null; // ISO time of the last move. Null before the first.
+};
+
+// Sent to both players after every move: the clocks as of that move.
+export type ClockMessage = {
+  whiteTimeRemaining: number;
+  blackTimeRemaining: number;
+  lastMoveAt: string | null;
 };
 
 // Sent to both players when a move ends the game. Winner is null for a draw.
@@ -41,6 +53,7 @@ export type GameHub = {
   onMoveMade(handler: (move: MoveMessage) => void): void;
   onMoveConfirmed(handler: (move: unknown) => void): void;
   onGameOver(handler: (gameOver: GameOverMessage) => void): void;
+  onClockUpdate(handler: (clocks: ClockMessage) => void): void;
   onPinged(handler: () => void): void;
   onError(handler: (message: string) => void): void;
   onStatusChange(handler: (connected: boolean) => void): void;
@@ -59,6 +72,22 @@ export function connectGameHub(): GameHub {
   connection.onclose(() => statusHandler(false));
 
   let errorHandler: (message: string) => void = () => {};
+
+  // The move number sent with each move, so the server can reject a move made
+  // on an old position. Set from GameState, then moved on by every accepted
+  // move: ours (MoveConfirmed) and the opponent's (MoveMade).
+  let currentMove: number | undefined;
+  connection.on("GameState", (state: GameStateMessage) => {
+    currentMove = state.currentMove;
+  });
+  const nextMove = () => {
+    if (currentMove !== undefined) currentMove++;
+  };
+  connection.on("MoveConfirmed", nextMove);
+  connection.on("MoveMade", nextMove);
+
+  // Only one move is sent at a time, so a double click can't send it twice.
+  let moveInFlight = false;
 
   // Group membership is per connection, so rejoin after a reconnect.
   let joinedGameId: string | undefined;
@@ -91,8 +120,27 @@ export function connectGameHub(): GameHub {
       }
     },
     async sendMove(gameId, move) {
-      if (connection.state === HubConnectionState.Connected) {
-        await connection.invoke("SendMove", gameId, toLongNotation(move));
+      if (currentMove === undefined) throw new Error("No game state yet");
+      if (moveInFlight) return;
+      if (connection.state !== HubConnectionState.Connected) return;
+
+      moveInFlight = true;
+      try {
+        await connection.invoke(
+          "SendMove",
+          gameId,
+          currentMove,
+          toLongNotation(move),
+        );
+      } catch (error) {
+        // The game moved on without us. Ask for the current state again, which
+        // resets the board and the move number through GameState.
+        if (error instanceof Error && error.message.endsWith("stale_move")) {
+          void rejoin();
+        }
+        throw error;
+      } finally {
+        moveInFlight = false;
       }
     },
     onGameState: (handler) => connection.on("GameState", handler),
@@ -103,6 +151,7 @@ export function connectGameHub(): GameHub {
       }),
     onMoveConfirmed: (handler) => connection.on("MoveConfirmed", handler),
     onGameOver: (handler) => connection.on("GameOver", handler),
+    onClockUpdate: (handler) => connection.on("ClockUpdate", handler),
     onPinged: (handler) => connection.on("Pinged", handler),
     onError: (handler) => {
       errorHandler = handler;

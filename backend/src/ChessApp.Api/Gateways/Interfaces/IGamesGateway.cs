@@ -18,14 +18,10 @@ public interface IGamesGateway
     Task<JoinGameByCodeResult> JoinGameByCodeAsync(string code, Guid playerId);
 
     /// <summary>
-    /// Saves a move from the game: position, move number, time of the move and both clocks.
-    /// Touches no other column.
+    /// Saves everything playing the game can change, in one update: position, moves, move number,
+    /// clocks, timings, status and result. Seats and invite code are left alone.
+    /// Optimistic locking: only saves if the stored game is still on <paramref name="expectedMove"/>
+    /// and not completed. Returns false if it changed since it was read, and nothing is saved.
     /// </summary>
-    Task UpdateGameStateAsync(Game game);
-
-    /// <summary>Records when the first move was made. Touches no other column.</summary>
-    Task StartGameAsync(Guid gameId, DateTime startedAt);
-
-    /// <summary>Marks the game as completed, with how it ended and who won. Touches no other column.</summary>
-    Task CompleteGameAsync(Guid gameId, GameResult result, Guid? winningPlayerId);
+    Task<bool> SaveAsync(Game game, int expectedMove);
 }

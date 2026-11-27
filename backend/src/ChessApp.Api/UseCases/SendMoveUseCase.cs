@@ -1,11 +1,10 @@
-using Chess;
 using ChessApp.Api.Gateways.Interfaces;
 using ChessApp.Api.Models;
 using ChessApp.Api.UseCases.Interfaces;
 
 namespace ChessApp.Api.UseCases;
 
-public enum SendMoveError { NotFound, AccessDenied, GameNotActive, NotYourTurn, OutOfTime, IllegalMove }
+public enum SendMoveError { NotFound, AccessDenied, GameNotActive, RepeatedMove, StaleMove, NotYourTurn, OutOfTime, IllegalMove }
 
 // End and Winner are set when the game ended, by this move or by running out of time.
 // Winner is null for a draw.
@@ -28,122 +27,63 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         _timeProvider = timeProvider;
     }
 
-    public async Task<SendMoveResult> ExecuteAsync(Guid playerId, Guid gameId, string move)
+    public async Task<SendMoveResult> ExecuteAsync(Guid playerId, Guid gameId, int moveId, string move)
     {
         var now = _timeProvider.GetUtcNow().UtcDateTime;
 
         var game = await _gamesGateway.GetGameByIdAsync(gameId);
         if (game is null) return new(null, SendMoveError.NotFound);
 
-        if (!game.IsParticipant(playerId)) return new(null, SendMoveError.AccessDenied);
-
-        if (!IsGameActive(game)) return new(null, SendMoveError.GameNotActive);
-
         var playerColour = game.WhiteClientId == playerId ? PieceColour.White : PieceColour.Black;
 
-        if (!IsPlayersTurn(game, playerColour)) return new(null, SendMoveError.NotYourTurn);
+        var gameStateError = ValidateGameState(game, playerId, playerColour, moveId, move);
+        if (gameStateError is not null) return new(null, gameStateError);
 
-        var timeRemaining = CalculateTimeRemaining(game, playerColour, now);
+        var timeRemaining = game.CalculateTimeRemaining(playerColour, now);
 
         // Out of time: the move isn't played, and the opponent wins.
         if (timeRemaining < 0)
         {
             var winnerColour = playerColour == PieceColour.White ? PieceColour.Black : PieceColour.White;
-            await CompleteGameAsync(game, GameResult.Timeout, winnerColour);
+            game.Complete(GameResult.Timeout, winnerColour, now);
+            if (!await _gamesGateway.SaveAsync(game, moveId)) return new(null, SendMoveError.StaleMove);
             return new(game, SendMoveError.OutOfTime, GameResult.Timeout, winnerColour);
         }
 
-        // TODO: translate the client's move into the engine's Move. For now the string
-        // must be the library's long notation, like "{e2 - e4}", and a malformed one throws.
-        var result = _chessEngine.MakeMove(game.GameState, new Move(move));
+        var result = _chessEngine.MakeMove(game.GameState, move);
         if (!result.IsLegal) return new(null, SendMoveError.IllegalMove);
 
-        // The first move starts the game.
-        if (game.CurrentMove == 1)
-        {
-            game.StartedAt = now;
-            await _gamesGateway.StartGameAsync(gameId, game.StartedAt.Value);
-        }
+        if (game.CurrentMove == 1) game.Start(now);
 
-        if (playerColour == PieceColour.White)
-        {
-            game.WhiteTimeRemaining = timeRemaining;
-        }
-        else
-        {
-            game.BlackTimeRemaining = timeRemaining;
-        }
+        game.RecordMove(move, result.Fen!, playerColour, timeRemaining, now);
 
-        game.GameState = result.Fen!;
-        game.CurrentMove++;
-        game.LastMoveAt = now;
-        await _gamesGateway.UpdateGameStateAsync(game);
+        if (result.End is not null) game.Complete(result.End.Value, result.Winner, now);
 
-        if (result.End is not null)
-        {
-            var end = ToGameResult(result.End.Value);
-            await CompleteGameAsync(game, end, result.Winner);
-            return new(game, null, end, result.Winner);
-        }
+        // Everything above only changed the game in memory. This is the one write, and it
+        // only goes through if nobody else changed the game since it was read.
+        if (!await _gamesGateway.SaveAsync(game, moveId)) return new(null, SendMoveError.StaleMove);
 
-        // TODO: store CompletedAt when the game ends
-
-        return new(game, null);
+        // End and Winner are null unless the move ended the game.
+        return new(game, null, result.End, result.Winner);
     }
 
-    private async Task CompleteGameAsync(Game game, GameResult result, PieceColour? winnerColour)
+    // Null when the player is in the game, the game is active, the client is on the
+    // current move and it's their turn.
+    private static SendMoveError? ValidateGameState(Game game, Guid playerId, PieceColour playerColour, int moveId, string move)
     {
-        var winningPlayerId = winnerColour switch
-        {
-            PieceColour.White => game.WhiteClientId,
-            PieceColour.Black => game.BlackClientId,
-            _ => null,
-        };
+        if (!game.IsParticipant(playerId)) return SendMoveError.AccessDenied;
 
-        await _gamesGateway.CompleteGameAsync(game.Id, result, winningPlayerId);
+        // A resend of a move that already went through. Checked before IsGameActive so
+        // a resent game-ending move is still recognised. The hub treats it as a success.
+        if (game.IsRepeatOfLastMove(moveId, playerColour, move)) return SendMoveError.RepeatedMove;
 
-        game.Status = GameStatus.Completed;
-        game.Result = result;
-        game.WinningPlayerId = winningPlayerId;
-    }
+        if (!game.IsGameActive()) return SendMoveError.GameNotActive;
 
-    // The time since the last move comes off the player's clock. The clock starts
-    // with the first move, so before then there's nothing to take off.
-    private static int CalculateTimeRemaining(Game game, PieceColour playerColour, DateTime now)
-    {
-        var timeRemaining = playerColour == PieceColour.White
-            ? game.WhiteTimeRemaining
-            : game.BlackTimeRemaining;
+        // The client acted on an older position than the stored one.
+        if (moveId != game.CurrentMove) return SendMoveError.StaleMove;
 
-        if (game.LastMoveAt is null) return timeRemaining;
+        if (!game.IsPlayersTurn(playerColour)) return SendMoveError.NotYourTurn;
 
-        var secondsUsed = (int)(now - game.LastMoveAt.Value).TotalSeconds;
-
-        return timeRemaining - secondsUsed;
-    }
-
-    private static GameResult ToGameResult(GameEnd end) => end switch
-    {
-        GameEnd.Checkmate => GameResult.Checkmate,
-        GameEnd.Stalemate => GameResult.Stalemate,
-        GameEnd.InsufficientMaterial => GameResult.InsufficientMaterial,
-        GameEnd.FiftyMoveRule => GameResult.FiftyMoveRule,
-        _ => GameResult.Repetition,
-    };
-
-    // Active means both players are seated and the game hasn't finished.
-    private static bool IsGameActive(Game game)
-    {
-        return game.Status != GameStatus.WaitingForOpponent
-            && game.Status != GameStatus.Completed
-            && game.CompletedAt is null;
-    }
-
-    private static bool IsPlayersTurn(Game game, PieceColour playerColour)
-    {
-        // CurrentMove starts at 1. White plays the odd moves and black the even ones.
-        var colourToMove = game.CurrentMove % 2 == 1 ? PieceColour.White : PieceColour.Black;
-
-        return playerColour == colourToMove;
+        return null;
     }
 }
