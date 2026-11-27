@@ -25,8 +25,11 @@ public sealed class GameNotifier : IGameNotifier
         {
             if (playerId is not { } id) continue;
 
-            await _hub.Clients.User(id.ToString())
-                .SendAsync("GameState", GameResponseFactory.Create(game, id));
+            await SendGameStateAsync(game, id);
         }
     }
+
+    public Task SendGameStateAsync(Game game, Guid playerId) =>
+        _hub.Clients.User(playerId.ToString())
+            .SendAsync("GameState", GameResponseFactory.Create(game, playerId));
 }

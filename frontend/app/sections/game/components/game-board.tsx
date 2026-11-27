@@ -1,9 +1,10 @@
 import type { Game } from "~/lib/api";
 import { ChessBoard } from "./chess-board";
+import { ConnectionMenu } from "./connection-menu";
 import { EventLogList } from "./event-log-list";
-import { PlayerClock } from "./game-clocks";
 import { GameOverMenu } from "./game-over-menu";
 import { GameStatus } from "./game-status";
+import { GameTimer } from "./game-timer";
 import { WaitingForOpponent } from "./waiting-for-opponent";
 import { useGameHandler } from "../use-game-handler";
 
@@ -11,51 +12,43 @@ import { useGameHandler } from "../use-game-handler";
 export function GameBoard({ game }: { game: Game }) {
   const { colour } = game;
 
-  const { state, turn, inCheck, canMove, running, timeLeft, play } =
-    useGameHandler(game);
-
-  // Before GameState arrives, an empty bar of the same height keeps the layout still.
-  const clockFor = (side: "white" | "black") =>
-    state ? (
-      <PlayerClock
-        label={`${side === "white" ? "White" : "Black"} (${side === colour ? "you" : "opponent"})`}
-        ms={timeLeft(side)}
-        running={running === side}
-      />
-    ) : (
-      <div className="h-12" />
-    );
+  const {
+    state,
+    optimisticState,
+    connectionStatus,
+    turn,
+    inCheck,
+    canMove,
+    play,
+  } = useGameHandler(game);
 
   return (
     <>
       {/* The status from the page load until the hub sends its own, so the
           invite panel shows straight away and goes when the opponent joins. */}
-      {(state?.status ?? game.status) === "waiting" && (
+      {(optimisticState?.status ?? game.status) === "waiting" && (
         <WaitingForOpponent game={game} />
       )}
       <div className="mx-auto grid w-full max-w-[calc(100dvh-14.5rem)] grid-rows-[5rem_3rem_auto] gap-2 sm:max-w-[calc(100dvh-16rem)]">
         {/* While waiting, the invite panel above is the page heading. */}
-        {state && state.status !== "waiting" ? (
+        {optimisticState && optimisticState.status !== "waiting" ? (
           <GameStatus
-            status={state.status}
+            status={optimisticState.status}
             turn={turn}
             colour={colour}
             inCheck={inCheck}
-            result={state.result}
-            winner={state.winner}
+            result={optimisticState.result}
+            winner={optimisticState.winner}
           />
         ) : (
           <div />
         )}
-        <div className="grid grid-cols-2 gap-2">
-          {clockFor("white")}
-          {clockFor("black")}
-        </div>
+        <GameTimer state={state} colour={colour} />
         <div className="relative aspect-square w-full">
-          {state ? (
+          {optimisticState ? (
             <ChessBoard
               title={`You are playing ${colour}`}
-              fen={state.gameState}
+              gameState={optimisticState.gameState}
               orientation={colour}
               active={canMove}
               onMove={play}
@@ -67,12 +60,16 @@ export function GameBoard({ game }: { game: Game }) {
         </div>
       </div>
       {/* Fixed over the whole page, so it doesn't need to sit inside the board. */}
-      {state?.status === "completed" && (
+      {optimisticState?.status === "completed" && (
         <GameOverMenu
-          result={state.result}
-          winner={state.winner}
+          result={optimisticState.result}
+          winner={optimisticState.winner}
           colour={colour}
         />
+      )}
+      {(connectionStatus === "reconnecting" ||
+        connectionStatus === "disconnected") && (
+        <ConnectionMenu status={connectionStatus} />
       )}
       {/* <EventLogList entries={eventLogs} /> */}
     </>

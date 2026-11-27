@@ -202,6 +202,48 @@ public class SendMoveUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_WhenGameNotActive_SendsThePlayerTheGameState()
+    {
+        // Arrange
+        var game = NewGameThatPassesChecks();
+        game.Setup(g => g.IsGameActive()).Returns(false);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(game.Object, _white), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_WhenMoveIdIsStale_SendsThePlayerTheGameState()
+    {
+        // Arrange: the game is on move 3, and the client sends move 2.
+        var game = NewGameThatPassesChecks();
+        game.Object.CurrentMove = 3;
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 2, AMove);
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(game.Object, _white), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_WhenNotPlayersTurn_SendsThePlayerTheGameState()
+    {
+        // Arrange
+        var game = NewGameThatPassesChecks();
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(false);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(game.Object, _white), Times.Once);
+    }
+
+    [Fact]
     public async Task Execute_WhenPlayerRunsOutOfTime_ReturnsOutOfTimeError()
     {
         // Arrange

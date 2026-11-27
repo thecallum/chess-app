@@ -7,14 +7,14 @@ export type GameStateMessage = {
   code: string;
   colour: "white" | "black";
   status: "waiting" | "in_progress" | "completed";
-  gameState: string; 
-  currentMove: number; 
-  moves: string[]; 
-  whiteTimeRemainingMs: number; 
-  blackTimeRemainingMs: number; 
-  lastMoveAt: string | null; 
-  result: string | null; 
-  winner: "white" | "black" | null; 
+  gameState: string;
+  currentMove: number;
+  moves: string[];
+  whiteTimeRemainingMs: number;
+  blackTimeRemainingMs: number;
+  lastMoveAt: string | null;
+  result: string | null;
+  winner: "white" | "black" | null;
 };
 
 export type MoveResult = { ok: true } | { ok: false; error: string };
@@ -22,27 +22,58 @@ export type MoveResult = { ok: true } | { ok: false; error: string };
 const toLongNotation = ({ from, to, promotion }: MoveIntent) =>
   `{${from} - ${to}${promotion ? ` - =${promotion.toLowerCase()}` : ""}}`;
 
+export type ConnectionStatus =
+  "connecting" | "connected" | "reconnecting" | "disconnected";
+
 export function useGameSession(gameId: string) {
   const [state, setState] = useState<GameStateMessage>();
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("connecting");
   const connectionRef = useRef<HubConnection>(null);
 
   useEffect(() => {
+    // Ignores events from a connection this effect has already stopped.
+    let active = true;
+    const setStatus = (status: ConnectionStatus) => {
+      if (active) setConnectionStatus(status);
+    };
+
     const connection = new HubConnectionBuilder()
       .withUrl("/api/hubs/game")
       .withAutomaticReconnect()
       .build();
+    connection.serverTimeoutInMilliseconds = 10_000;
     connectionRef.current = connection;
 
     connection.on("GameState", (next: GameStateMessage) => {
       if (next.gameId === gameId) setState(next);
     });
 
-    connection
-      .start()
-      .then(() => connection.invoke("ConnectToGame", gameId))
-      .catch(console.error);
+    connection.onreconnecting(() => setStatus("reconnecting"));
+
+    connection.onreconnected(() => {
+      setStatus("connected");
+      connection.invoke("ConnectToGame", gameId).catch(console.error);
+    });
+
+    connection.onclose(() => setStatus("disconnected"));
+
+    async function connect() {
+      try {
+        await connection.start();
+      } catch (error) {
+        console.error(error);
+        setStatus("disconnected");
+        return;
+      }
+      setStatus("connected");
+      await connection.invoke("ConnectToGame", gameId).catch(console.error);
+    }
+
+    void connect();
 
     return () => {
+      active = false;
       connectionRef.current = null;
       void connection.stop();
     };
@@ -65,5 +96,5 @@ export function useGameSession(gameId: string) {
     }
   }
 
-  return { state, move };
+  return { state, connectionStatus, move };
 }

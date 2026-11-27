@@ -51,6 +51,28 @@ public class GameNotifierTests
     }
 
     [Fact]
+    public async Task SendGameStateAsync_ForOnePlayer_OnlySendsToThatPlayer()
+    {
+        // Arrange
+        var white = Guid.NewGuid();
+        var black = Guid.NewGuid();
+        var game = new Game(white, PieceColour.White) { BlackClientId = black };
+        _clients.Setup(c => c.User(black.ToString())).Returns(_client.Object);
+        var expected = GameResponseFactory.Create(game, black);
+
+        // Act
+        await NewNotifier().SendGameStateAsync(game, black);
+
+        // Assert
+        _clients.Verify(c => c.User(black.ToString()), Times.Once);
+        _clients.Verify(c => c.User(It.IsAny<string>()), Times.Once);
+        _client.Verify(c => c.SendCoreAsync(
+            "GameState",
+            It.Is<object?[]>(args => args.Length == 1 && Equals(args[0], expected)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task SendGameStateAsync_WhenASeatIsEmpty_OnlySendsToTheSeatedPlayer()
     {
         // Arrange: only white is seated.

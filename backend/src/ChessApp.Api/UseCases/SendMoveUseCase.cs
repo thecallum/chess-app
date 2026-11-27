@@ -41,6 +41,10 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         // A resend of a move that already went through: send the current state again,
         // which re-syncs the client. The hub treats it as a success.
         if (gameStateError == SendMoveError.RepeatedMove) await _gameNotifier.SendGameStateAsync(game);
+
+        // The client is behind: send them the current state so they catch up.
+        if (gameStateError is SendMoveError.GameNotActive or SendMoveError.StaleMove or SendMoveError.NotYourTurn)
+            await _gameNotifier.SendGameStateAsync(game, playerId);
         if (gameStateError is not null) return new(null, gameStateError);
 
         var timeRemaining = game.CalculateTimeRemaining(playerColour, now);

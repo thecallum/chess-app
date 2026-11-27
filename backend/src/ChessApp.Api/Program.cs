@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options => options.KeepAliveInterval = TimeSpan.FromSeconds(5));
 
 builder.Services.AddAuthentication(GuestAuthentication.Scheme)
     .AddScheme<AuthenticationSchemeOptions, GuestAuthenticationHandler>(GuestAuthentication.Scheme, null);

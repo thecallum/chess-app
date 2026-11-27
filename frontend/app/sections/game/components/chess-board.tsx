@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { defaultBoardTheme, type BoardTheme } from "../lib/board-themes";
 
 // Our own board component, so the rest of the app doesn't depend on
-// react-chessboard directly. Controlled: the parent owns the position (`fen`).
+// react-chessboard directly. Controlled: the parent owns the position (`gameState`).
 // Moves are made by dragging or by clicking a piece then its destination, and
 // are reported through `onMove` as a move intent.
 export type MoveIntent = { from: string; to: string; promotion?: string };
@@ -12,7 +12,7 @@ export type MoveIntent = { from: string; to: string; promotion?: string };
 type Props = {
   // Labels the board for screen readers. Not shown.
   title: string;
-  fen: string;
+  gameState: string;
   orientation?: "white" | "black";
   // Only the active board can be moved on.
   active: boolean;
@@ -22,7 +22,7 @@ type Props = {
 
 export function ChessBoard({
   title,
-  fen,
+  gameState,
   orientation = "white",
   active,
   onMove,
@@ -30,7 +30,7 @@ export function ChessBoard({
 }: Props) {
   const [selected, setSelected] = useState<Square | null>(null);
 
-  const game = new Chess(fen);
+  const game = new Chess(gameState);
   const targets =
     active && selected
       ? game.moves({ square: selected, verbose: true }).map((m) => m.to)
@@ -65,7 +65,7 @@ export function ChessBoard({
       <div className="w-full touch-none">
         <Chessboard
           options={{
-            position: fen,
+            position: gameState,
             boardOrientation: orientation,
             squareStyles,
             lightSquareStyle: { backgroundColor: theme.light },
