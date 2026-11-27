@@ -72,7 +72,8 @@ public class GamesApiTests : ApiTestBase
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var game = await response.Content.ReadFromJsonAsync<GameResponse>();
-        Assert.Equal(created, game);
+        // Equivalent, not Equal: the record's Moves list would be compared by reference.
+        Assert.Equivalent(created, game, strict: true);
     }
 
     [Fact]
