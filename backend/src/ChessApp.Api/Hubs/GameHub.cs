@@ -1,5 +1,5 @@
 using ChessApp.Api.Auth;
-using ChessApp.Api.Controllers.Responses;
+using ChessApp.Api.Hubs.Responses;
 using ChessApp.Api.UseCases;
 using ChessApp.Api.UseCases.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -52,7 +52,7 @@ public class GameHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, Group(gameId));
 
-        await Clients.Caller.SendAsync("GameState", GameResponseFactory.Create(result.Game!, playerId));
+        await Clients.Caller.SendAsync("GameState", GameStateResponseFactory.Create(result.Game!));
     }
 
     // Only handles the request. The use case sends both players the new GameState,

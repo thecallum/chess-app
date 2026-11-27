@@ -1,6 +1,6 @@
-using ChessApp.Api.Controllers.Responses;
 using ChessApp.Api.Gateways;
 using ChessApp.Api.Hubs;
+using ChessApp.Api.Hubs.Responses;
 using ChessApp.Api.Models;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
@@ -33,13 +33,13 @@ public class GameNotifierTests
         _clients.Setup(c => c.User(white.ToString())).Returns(whiteClient.Object);
         _clients.Setup(c => c.User(black.ToString())).Returns(blackClient.Object);
 
-        var expectedForWhite = GameResponseFactory.Create(game, white);
-        var expectedForBlack = GameResponseFactory.Create(game, black);
+        var expectedForWhite = GameStateResponseFactory.Create(game);
+        var expectedForBlack = GameStateResponseFactory.Create(game);
 
         // Act
         await NewNotifier().SendGameStateAsync(game);
 
-        // Assert: each gets the game as they see it, with their own colour.
+        // Assert
         whiteClient.Verify(c => c.SendCoreAsync(
             "GameState",
             It.Is<object?[]>(args => args.Length == 1 && Equals(args[0], expectedForWhite)),
@@ -58,7 +58,7 @@ public class GameNotifierTests
         var black = Guid.NewGuid();
         var game = new Game(white, PieceColour.White) { BlackClientId = black };
         _clients.Setup(c => c.User(black.ToString())).Returns(_client.Object);
-        var expected = GameResponseFactory.Create(game, black);
+        var expected = GameStateResponseFactory.Create(game);
 
         // Act
         await NewNotifier().SendGameStateAsync(game, black);
@@ -79,7 +79,7 @@ public class GameNotifierTests
         var white = Guid.NewGuid();
         var game = new Game(white, PieceColour.White);
         _clients.Setup(c => c.User(white.ToString())).Returns(_client.Object);
-        var expected = GameResponseFactory.Create(game, white);
+        var expected = GameStateResponseFactory.Create(game);
 
         // Act
         await NewNotifier().SendGameStateAsync(game);

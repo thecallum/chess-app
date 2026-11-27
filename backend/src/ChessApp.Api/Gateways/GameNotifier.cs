@@ -1,6 +1,6 @@
-using ChessApp.Api.Controllers.Responses;
 using ChessApp.Api.Gateways.Interfaces;
 using ChessApp.Api.Hubs;
+using ChessApp.Api.Hubs.Responses;
 using ChessApp.Api.Models;
 using Microsoft.AspNetCore.SignalR;
 
@@ -16,8 +16,7 @@ public sealed class GameNotifier : IGameNotifier
         _hub = hub;
     }
 
-    // Each player gets their own copy, with their own colour. Clients.User finds a
-    // player's connections by the NameIdentifier claim, which is their guest id.
+    // Clients.User finds a player's connections by the NameIdentifier claim, which is their guest id.
     // The ids themselves are never sent: they're the players' login cookies.
     public async Task SendGameStateAsync(Game game)
     {
@@ -31,5 +30,5 @@ public sealed class GameNotifier : IGameNotifier
 
     public Task SendGameStateAsync(Game game, Guid playerId) =>
         _hub.Clients.User(playerId.ToString())
-            .SendAsync("GameState", GameResponseFactory.Create(game, playerId));
+            .SendAsync("GameState", GameStateResponseFactory.Create(game));
 }

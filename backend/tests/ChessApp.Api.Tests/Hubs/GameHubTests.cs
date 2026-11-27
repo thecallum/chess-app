@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ChessApp.Api.Controllers.Responses;
 using ChessApp.Api.Hubs;
+using ChessApp.Api.Hubs.Responses;
 using ChessApp.Api.Models;
 using ChessApp.Api.UseCases;
 using ChessApp.Api.UseCases.Interfaces;
@@ -101,7 +102,7 @@ public class GameHubTests
         var game = new Game(_playerId, PieceColour.White);
         _connectToGameUseCase.Setup(u => u.ExecuteAsync(_playerId, game.Id))
             .ReturnsAsync(new ConnectToGameResult(game, null));
-        var expected = GameResponseFactory.Create(game, _playerId);
+        var expected = GameStateResponseFactory.Create(game);
 
         // Act
         await NewHub().ConnectToGame(game.Id);

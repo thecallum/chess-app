@@ -1,12 +1,12 @@
 export type Colour = "white" | "black";
 export type ColourChoice = Colour | "random";
+export type GameStatus = "waiting" | "in_progress" | "completed";
 
 export type Game = {
   gameId: string;
   code: string;
-  role: "host" | "guest";
   colour: Colour;
-  status: "waiting" | "in_progress";
+  status: GameStatus;
 };
 
 export class ApiError extends Error {

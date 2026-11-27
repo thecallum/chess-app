@@ -53,7 +53,6 @@ describe("CreateGameForm", () => {
       vi.mocked(createGameRequest).mockResolvedValue({
         gameId: "g1",
         code: "ABC123",
-        role: "host",
         colour: "white",
         status: "waiting",
       });

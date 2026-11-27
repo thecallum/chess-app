@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Channels;
 using ChessApp.Api.Controllers.Responses;
+using ChessApp.Api.Hubs.Responses;
 using ChessApp.Api.Tests.Gateways;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -26,18 +27,18 @@ public class GameHubApiTests : ApiTestBase
     }
 
     // A hub connection that records every GameState it receives, in order.
-    private sealed record HubClient(HubConnection Connection, ChannelReader<GameResponse> States);
+    private sealed record HubClient(HubConnection Connection, ChannelReader<GameStateResponse> States);
 
     private async Task<HubClient> ConnectAsync(string cookie)
     {
         var connection = Factory.NewHubConnection(cookie);
-        var states = Channel.CreateUnbounded<GameResponse>();
-        connection.On<GameResponse>("GameState", state => states.Writer.TryWrite(state));
+        var states = Channel.CreateUnbounded<GameStateResponse>();
+        connection.On<GameStateResponse>("GameState", state => states.Writer.TryWrite(state));
         await connection.StartAsync();
         return new HubClient(connection, states.Reader);
     }
 
-    private static async Task<GameResponse> NextStateAsync(HubClient client)
+    private static async Task<GameStateResponse> NextStateAsync(HubClient client)
     {
         using var timeout = new CancellationTokenSource(EventTimeout);
         try
@@ -90,11 +91,10 @@ public class GameHubApiTests : ApiTestBase
         // Act: connect to the game.
         await white.Connection.InvokeAsync("ConnectToGame", game.GameId);
 
-        // Assert: the reply is the game as white sees it, still waiting for an opponent.
+        // Assert: the reply is the game, still waiting for an opponent.
         var state = await NextStateAsync(white);
         Assert.Equal(game.GameId, state.GameId);
         Assert.Equal("waiting", state.Status);
-        Assert.Equal("white", state.Colour);
         await white.Connection.DisposeAsync();
     }
 
@@ -117,11 +117,10 @@ public class GameHubApiTests : ApiTestBase
         // Act: the opponent joins over REST.
         await JoinGameAsync(opponent, game.Code);
 
-        // Assert: the creator's open connection is told, with their own colour.
+        // Assert: the creator's open connection is told.
         var onJoin = await NextStateAsync(white);
         Assert.Equal(game.GameId, onJoin.GameId);
         Assert.Equal("in_progress", onJoin.Status);
-        Assert.Equal("white", onJoin.Colour);
         await white.Connection.DisposeAsync();
     }
 
@@ -144,22 +143,19 @@ public class GameHubApiTests : ApiTestBase
         await black.Connection.InvokeAsync("ConnectToGame", game.GameId);
 
         // 4. Each receives the current state in reply. Read it so the next one is fresh.
-        await NextStateAsync(white);
+        var before = await NextStateAsync(white);
         await NextStateAsync(black);
 
         // Act: white plays the first move.
         await white.Connection.InvokeAsync("SendMove", game.GameId, 1, "{e2 - e4}");
 
-        // Assert: both get the position after the move, each with their own colour.
+        // Assert: both get the position after the move.
         var whiteState = await NextStateAsync(white);
         var blackState = await NextStateAsync(black);
         Assert.Equal(2, whiteState.CurrentMove);
-        Assert.Equal(["{e2 - e4}"], whiteState.Moves);
-        Assert.NotEqual(game.GameState, whiteState.GameState);
-        Assert.Equal("white", whiteState.Colour);
+        Assert.NotEqual(before.GameState, whiteState.GameState);
         Assert.Equal(whiteState.GameState, blackState.GameState);
         Assert.Equal(2, blackState.CurrentMove);
-        Assert.Equal("black", blackState.Colour);
         await white.Connection.DisposeAsync();
         await black.Connection.DisposeAsync();
     }

@@ -6,9 +6,9 @@ namespace ChessApp.Api.Gateways.Interfaces;
 // the hub (like joining, which is an HTTP request).
 public interface IGameNotifier
 {
-    /// <summary>Sends each player in the game their own copy of its current state.</summary>
+    /// <summary>Sends each player in the game its current state.</summary>
     Task SendGameStateAsync(Game game);
 
-    /// <summary>Sends one player their copy of the game's current state.</summary>
+    /// <summary>Sends one player the game's current state.</summary>
     Task SendGameStateAsync(Game game, Guid playerId);
 }

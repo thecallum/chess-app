@@ -63,7 +63,6 @@ describe("GameSection", () => {
       data: {
         gameId: "g1",
         code: "ABC123",
-        role: "host",
         colour: "white",
         status: "waiting",
       },

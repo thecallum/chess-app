@@ -1,16 +1,8 @@
 namespace ChessApp.Api.Controllers.Responses;
 
-// A game as seen by one of its players.
+// A game as seen by one of its players, for creating, joining and loading it.
 public sealed record GameResponse(
     Guid GameId,
     string Code,
     string Colour,
-    string Status,
-    string GameState,
-    int CurrentMove,
-    IReadOnlyList<string> Moves,
-    int WhiteTimeRemainingMs,
-    int BlackTimeRemainingMs,
-    DateTime? LastMoveAt,
-    string? Result,
-    string? Winner);
+    string Status);
