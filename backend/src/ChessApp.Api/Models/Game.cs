@@ -132,6 +132,22 @@ public sealed class Game
         return lastMover == playerColour && Moves[^1] == move;
     }
 
+    // The player ran out of time: their clock shows zero, and the opponent wins.
+    public void TimeOut(PieceColour player, DateTime now)
+    {
+        if (player == PieceColour.White)
+        {
+            WhiteTimeRemainingMs = 0;
+        }
+        else
+        {
+            BlackTimeRemainingMs = 0;
+        }
+
+        var opponent = player == PieceColour.White ? PieceColour.Black : PieceColour.White;
+        Complete(GameResult.Timeout, opponent, now);
+    }
+
     // The game is over. The winner is null for a draw.
     public void Complete(GameResult result, PieceColour? winner, DateTime now)
     {

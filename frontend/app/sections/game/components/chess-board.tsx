@@ -10,6 +10,7 @@ import { defaultBoardTheme, type BoardTheme } from "../lib/board-themes";
 export type MoveIntent = { from: string; to: string; promotion?: string };
 
 type Props = {
+  // Labels the board for screen readers. Not shown.
   title: string;
   fen: string;
   orientation?: "white" | "black";
@@ -30,17 +31,10 @@ export function ChessBoard({
   const [selected, setSelected] = useState<Square | null>(null);
 
   const game = new Chess(fen);
-  const turn = game.turn() === "w" ? "White" : "Black";
   const targets =
     active && selected
       ? game.moves({ square: selected, verbose: true }).map((m) => m.to)
       : [];
-
-  let status = `${turn} to move`;
-  if (game.isCheckmate())
-    status = `Checkmate. ${turn === "White" ? "Black" : "White"} wins`;
-  else if (game.isDraw()) status = "Draw";
-  else if (game.inCheck()) status = `${turn} to move (check)`;
 
   function tryMove(from: string, to: string) {
     try {
@@ -67,8 +61,6 @@ export function ChessBoard({
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{status}</p>
       {/* touch-none stops the page scrolling while dragging a piece. */}
       <div className="w-full touch-none">
         <Chessboard

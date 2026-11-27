@@ -1,5 +1,6 @@
 using ChessApp.Api.Auth;
 using ChessApp.Api.Controllers.Responses;
+using ChessApp.Api.Models;
 using ChessApp.Api.UseCases;
 using ChessApp.Api.UseCases.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -77,6 +78,8 @@ public class GameHub : Hub
         if (result.Error == SendMoveError.NotYourTurn) throw new HubException("not_your_turn");
         if (result.Error == SendMoveError.OutOfTime)
         {
+            // The clocks first, so the timed-out player's shows 0:00.
+            await SendClockUpdateAsync(gameId, result.Game!);
             await SendGameOverAsync(gameId, result);
             throw new HubException("out_of_time");
         }
@@ -88,22 +91,27 @@ public class GameHub : Hub
         await Clients.OthersInGroup(Group(gameId)).SendAsync("MoveMade", move);
         await Clients.Caller.SendAsync("MoveConfirmed", move);
 
+        // test
+
         // Both players get the clocks as of this move, so their timers agree.
-        await Clients.Group(Group(gameId)).SendAsync("ClockUpdate", new
-        {
-            whiteTimeRemainingMs = result.Game!.WhiteTimeRemainingMs,
-            blackTimeRemainingMs = result.Game.BlackTimeRemainingMs,
-            lastMoveAt = result.Game.LastMoveAt,
-        });
+        await SendClockUpdateAsync(gameId, result.Game!);
 
         // If the move ended the game, both players are told how.
         if (result.End is not null) await SendGameOverAsync(gameId, result);
     }
 
+    private Task SendClockUpdateAsync(Guid gameId, Game game) =>
+        Clients.Group(Group(gameId)).SendAsync("ClockUpdate", new
+        {
+            whiteTimeRemainingMs = game.WhiteTimeRemainingMs,
+            blackTimeRemainingMs = game.BlackTimeRemainingMs,
+            lastMoveAt = game.LastMoveAt,
+        });
+
     private Task SendGameOverAsync(Guid gameId, SendMoveResult result) =>
         Clients.Group(Group(gameId)).SendAsync("GameOver", new
         {
             result = result.End.ToString(),
-            winner = result.Winner?.ToString(),
+            winner = result.Winner?.ToString().ToLowerInvariant(),
         });
 }

@@ -1,23 +1,6 @@
-// Both players' clocks. Only shows the times; GameBoard counts them down.
-// Times are in milliseconds.
-export function GameClocks({
-  white,
-  black,
-  running,
-}: {
-  white: number;
-  black: number;
-  running: "white" | "black" | null;
-}) {
-  return (
-    <div className="mb-4 grid grid-cols-2 gap-2">
-      <Clock label="White" ms={white} running={running === "white"} />
-      <Clock label="Black" ms={black} running={running === "black"} />
-    </div>
-  );
-}
-
-function Clock({
+// One player's clock, shown as a bar above or below the board. Only shows the
+// time; GameBoard counts it down. Times are in milliseconds.
+export function PlayerClock({
   label,
   ms,
   running,
@@ -28,9 +11,9 @@ function Clock({
 }) {
   return (
     <div
-      className={`rounded-xl border p-3 ${running ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+      className={`flex h-12 items-center justify-between rounded-xl border px-3 ${running ? "bg-primary text-primary-foreground" : "bg-muted"}`}
     >
-      <p className="text-xs font-semibold">{label}</p>
+      <p className="text-sm font-semibold">{label}</p>
       <p className="font-mono text-2xl tabular-nums" aria-live="off">
         {formatTime(ms)}
       </p>

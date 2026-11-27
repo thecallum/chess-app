@@ -1,11 +1,14 @@
 import { Chess } from "chess.js";
 import { useEffect, useRef, useState } from "react";
 import { ChessBoard, type MoveIntent } from "./chess-board";
-import { GameClocks } from "./game-clocks";
+import { PlayerClock } from "./game-clocks";
+import { GameOverMenu } from "./game-over-menu";
+import { GameStatus } from "./game-status";
 import {
   connectGameHub,
   type ClockMessage,
   type GameHub,
+  type GameStateMessage,
 } from "../lib/game-hub";
 
 // One board for this player. Moves made here are sent over the game's channel,
@@ -18,11 +21,17 @@ export function GameBoard({
   gameId: string;
   colour: "white" | "black";
 }) {
-  const [fen, setFen] = useState(() => new Chess().fen());
+  // The position from the server. Undefined until GameState arrives, so the board
+  // isn't drawn at the starting position first and then animated to the real one.
+  const [fen, setFen] = useState<string>();
   const [log, setLog] = useState<string[]>([]);
   // The server's clocks as of the last move. Undefined until GameState arrives.
   const [clocks, setClocks] = useState<ClockMessage>();
-  const [gameOver, setGameOver] = useState(false);
+  const [status, setStatus] = useState<GameStateMessage["status"]>();
+  const [result, setResult] = useState<string | null>(null);
+  const [winner, setWinner] = useState<GameStateMessage["winner"]>(null);
+  // The player can close the game-over menu to look at the final position.
+  const [menuClosed, setMenuClosed] = useState(false);
   // The current time, updated on each tick while a clock runs.
   const [now, setNow] = useState(() => Date.now());
   const hub = useRef<GameHub>(null);
@@ -42,21 +51,31 @@ export function GameBoard({
     connection.onGameState((state) => {
       addLog(`GameState ${JSON.stringify(state)}`);
       // The server's position is the truth. Games made before the column
-      // existed have an empty one, so keep the starting position for those.
-      if (state.gameState) setFen(state.gameState);
+      // existed have an empty one, so they start from the opening position.
+      setFen(state.gameState || new Chess().fen());
       setClocks({
         whiteTimeRemainingMs: state.whiteTimeRemainingMs,
         blackTimeRemainingMs: state.blackTimeRemainingMs,
         lastMoveAt: state.lastMoveAt,
       });
-      setGameOver(state.status === "completed");
+      setStatus(state.status);
+      setResult(state.result);
+      setWinner(state.winner);
     });
-    connection.onMoveConfirmed((move) =>
-      addLog(`MoveConfirmed ${JSON.stringify(move)}`),
-    );
+    // A move means both players are in and the game has started.
+    const moveMade = () =>
+      setStatus((current) =>
+        current === "completed" ? current : "in_progress",
+      );
+    connection.onMoveConfirmed((move) => {
+      addLog(`MoveConfirmed ${JSON.stringify(move)}`);
+      moveMade();
+    });
     connection.onGameOver((gameOver) => {
       addLog(`GameOver ${JSON.stringify(gameOver)}`);
-      setGameOver(true);
+      setStatus("completed");
+      setResult(gameOver.result);
+      setWinner(gameOver.winner);
     });
     connection.onClockUpdate((update) => {
       addLog(`ClockUpdate ${JSON.stringify(update)}`);
@@ -65,6 +84,7 @@ export function GameBoard({
     connection.onError((message) => addLog(`Error: ${message}`));
     connection.onMoveMade((move) => {
       addLog(`MoveMade ${JSON.stringify(move)}`);
+      moveMade();
       setFen((current) => {
         const game = new Chess(current);
         try {
@@ -88,6 +108,7 @@ export function GameBoard({
 
   function play(move: MoveIntent) {
     // Show the move straight away, and undo it if the server rejects it.
+    if (!fen) return;
     const previousFen = fen;
     const game = new Chess(fen);
     game.move(move);
@@ -102,14 +123,15 @@ export function GameBoard({
     });
   }
 
-  const myTurn = new Chess(fen).turn() === (colour === "white" ? "w" : "b");
+  const position = new Chess(fen);
+  const myTurn = position.turn() === (colour === "white" ? "w" : "b");
 
   // Whose clock is running. The side to move, except before white's first move
   // (the clock starts once a move is made) and after the game is over.
-  const [, turn, , , , fullMove] = fen.split(" ");
+  const [, turn, , , , fullMove] = (fen ?? "").split(" ");
   const isFirstMove = turn === "w" && fullMove === "1";
   const running =
-    clocks && !gameOver && !isFirstMove
+    clocks && status !== "completed" && !isFirstMove
       ? turn === "w"
         ? "white"
         : "black"
@@ -137,22 +159,69 @@ export function GameBoard({
     return Math.max(0, stored - msUsed);
   };
 
+  // Before GameState arrives, an empty bar of the same height keeps the layout still.
+  const clockFor = (side: "white" | "black") =>
+    clocks ? (
+      <PlayerClock
+        label={`${side === "white" ? "White" : "Black"} (${side === colour ? "you" : "opponent"})`}
+        ms={timeLeft(side)}
+        running={running === side}
+      />
+    ) : (
+      <div className="h-12" />
+    );
+
   return (
     <>
-      {clocks && (
-        <GameClocks
-          white={timeLeft("white")}
-          black={timeLeft("black")}
-          running={running}
+      {/* Three rows: status, both clocks, board. The status and clocks have
+          fixed heights (5rem, 3rem, plus 2 x 0.5rem gaps = 9rem). The board is
+          a square at the container's full width, so the container is never
+          wider than the screen height less those rows, the site header (3.5rem,
+          or 4rem from sm; components/header.tsx) and the page's padding (2rem,
+          or 3rem from sm; routes/play.game.tsx): 14.5rem, or 16rem from sm.
+          That way it always fits, and it's no taller than it needs to be. */}
+      <div className="mx-auto grid w-full max-w-[calc(100dvh-14.5rem)] grid-rows-[5rem_3rem_auto] gap-2 sm:max-w-[calc(100dvh-16rem)]">
+        {/* While waiting, the invite panel above is the page heading. */}
+        {status && status !== "waiting" ? (
+          <GameStatus
+            status={status}
+            turn={turn === "w" ? "white" : "black"}
+            colour={colour}
+            inCheck={position.inCheck()}
+            result={result}
+            winner={winner}
+          />
+        ) : (
+          <div />
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          {clockFor("white")}
+          {clockFor("black")}
+        </div>
+        <div className="relative aspect-square w-full">
+          {fen ? (
+            <ChessBoard
+              title={`You are playing ${colour}`}
+              fen={fen}
+              orientation={colour}
+              active={myTurn && status !== "completed"}
+              onMove={play}
+            />
+          ) : (
+            // Keeps the board's space while the position loads.
+            <div className="size-full rounded-xl bg-muted" />
+          )}
+        </div>
+      </div>
+      {/* Fixed over the whole page, so it doesn't need to sit inside the board. */}
+      {status === "completed" && !menuClosed && (
+        <GameOverMenu
+          result={result}
+          winner={winner}
+          colour={colour}
+          onClose={() => setMenuClosed(true)}
         />
       )}
-      <ChessBoard
-        title={`You are playing ${colour}`}
-        fen={fen}
-        orientation={colour}
-        active={myTurn}
-        onMove={play}
-      />
       <section
         aria-labelledby="event-log"
         className="mt-4 rounded-xl border p-4"

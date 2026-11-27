@@ -33,6 +33,8 @@ export type GameStateMessage = {
   whiteTimeRemainingMs: number; // Milliseconds, as of the last move.
   blackTimeRemainingMs: number; // Milliseconds, as of the last move.
   lastMoveAt: string | null; // ISO time of the last move. Null before the first.
+  result: string | null; // How the game ended, like "Checkmate". Null until it has.
+  winner: "white" | "black" | null; // Null for a draw or an unfinished game.
 };
 
 // Sent to both players after every move: the clocks as of that move.
@@ -43,7 +45,10 @@ export type ClockMessage = {
 };
 
 // Sent to both players when a move ends the game. Winner is null for a draw.
-export type GameOverMessage = { result: string; winner: string | null };
+export type GameOverMessage = {
+  result: string;
+  winner: "white" | "black" | null;
+};
 
 export type GameHub = {
   ping(): Promise<void>;

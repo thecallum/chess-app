@@ -1,7 +1,6 @@
 import { useParams } from "react-router";
 import { GameBoard } from "./components/game-board";
 import { GameNotFound } from "./components/game-not-found";
-import { GameInProgress } from "./components/game-in-progress";
 import { WaitingForOpponent } from "./components/waiting-for-opponent";
 import { useGame } from "./use-game";
 
@@ -17,10 +16,8 @@ export function GameSection() {
 
   return (
     <>
-      {load.game.status === "waiting" ? (
+      {load.game.status === "waiting" && (
         <WaitingForOpponent game={load.game} />
-      ) : (
-        <GameInProgress game={load.game} />
       )}
       <GameBoard gameId={load.game.gameId} colour={load.game.colour} />
     </>

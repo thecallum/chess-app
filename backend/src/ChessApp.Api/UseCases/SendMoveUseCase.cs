@@ -45,7 +45,7 @@ public sealed class SendMoveUseCase : ISendMoveUseCase
         if (timeRemaining < 0)
         {
             var winnerColour = playerColour == PieceColour.White ? PieceColour.Black : PieceColour.White;
-            game.Complete(GameResult.Timeout, winnerColour, now);
+            game.TimeOut(playerColour, now);
             if (!await _gamesGateway.SaveAsync(game, moveId)) return new(null, SendMoveError.StaleMove);
             return new(game, SendMoveError.OutOfTime, GameResult.Timeout, winnerColour);
         }

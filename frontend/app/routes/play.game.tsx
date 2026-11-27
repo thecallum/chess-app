@@ -7,7 +7,7 @@ export function meta() {
 
 export default function PlayGame() {
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-16">
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-4 sm:gap-8 sm:px-6 sm:py-6">
       <GameSection />
     </main>
   );

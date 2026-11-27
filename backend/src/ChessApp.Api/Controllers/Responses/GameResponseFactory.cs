@@ -15,6 +15,13 @@ public static class GameResponseFactory
             _ => "in_progress",
         };
 
+        // The winner's colour, from the stored player id. Null for a draw or an unfinished game.
+        string? winner = null;
+        if (game.WinningPlayerId is { } winnerId)
+        {
+            winner = winnerId == game.WhiteClientId ? "white" : "black";
+        }
+
         return new GameResponse(
             game.Id,
             game.GameInviteCode ?? "",
@@ -25,6 +32,8 @@ public static class GameResponseFactory
             game.Moves,
             game.WhiteTimeRemainingMs,
             game.BlackTimeRemainingMs,
-            game.LastMoveAt);
+            game.LastMoveAt,
+            game.Result?.ToString(),
+            winner);
     }
 }

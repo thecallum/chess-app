@@ -11,4 +11,6 @@ public sealed record GameResponse(
     IReadOnlyList<string> Moves,
     int WhiteTimeRemainingMs,
     int BlackTimeRemainingMs,
-    DateTime? LastMoveAt);
+    DateTime? LastMoveAt,
+    string? Result,
+    string? Winner);
