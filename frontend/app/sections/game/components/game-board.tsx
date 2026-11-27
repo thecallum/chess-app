@@ -1,7 +1,6 @@
 import type { Game } from "~/lib/api";
 import { ChessBoard } from "./chess-board";
 import { ConnectionMenu } from "./connection-menu";
-import { EventLogList } from "./event-log-list";
 import { GameOverMenu } from "./game-over-menu";
 import { GameStatus } from "./game-status";
 import { GameTimer } from "./game-timer";
@@ -71,7 +70,6 @@ export function GameBoard({ game }: { game: Game }) {
         connectionStatus === "disconnected") && (
         <ConnectionMenu status={connectionStatus} />
       )}
-      {/* <EventLogList entries={eventLogs} /> */}
     </>
   );
 }
