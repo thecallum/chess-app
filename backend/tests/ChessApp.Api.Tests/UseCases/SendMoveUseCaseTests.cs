@@ -366,4 +366,184 @@ public class SendMoveUseCaseTests
         // Assert
         _gameNotifier.Verify(n => n.SendGameStateAsync(game.Object), Times.Once);
     }
+
+    [Fact]
+    public async Task Execute_WhenMoveIllegal_SavesAndSendsNothing()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(TimeLeft);
+        _chessEngine.Setup(e => e.MakeMove(Position, AMove))
+            .Returns(new MakeMoveResult(false, null, null, null));
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _gateway.Verify(g => g.SaveAsync(It.IsAny<Game>(), It.IsAny<int>()), Times.Never);
+        _gameNotifier.Verify(n => n.SendGameStateAsync(It.IsAny<Game>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenValidMove_ButSaveIsStale_SendsNoGameState()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(TimeLeft);
+        _chessEngine.Setup(e => e.MakeMove(Position, AMove))
+            .Returns(new MakeMoveResult(true, NewPosition, null, null));
+        _gateway.Setup(g => g.SaveAsync(game.Object, 1)).ReturnsAsync(false);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(It.IsAny<Game>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenPlayerRunsOutOfTime_ButSaveIsStale_SendsNoGameState()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(-1);
+        _gateway.Setup(g => g.SaveAsync(game.Object, 1)).ReturnsAsync(false);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(It.IsAny<Game>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenPlayerRunsOutOfTime_DoesntPlayTheMove()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(-1);
+        _gateway.Setup(g => g.SaveAsync(game.Object, 1)).ReturnsAsync(true);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        _chessEngine.Verify(e => e.MakeMove(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        game.Verify(
+            g => g.RecordMove(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PieceColour>(), It.IsAny<int>(), It.IsAny<DateTime>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenNotTheFirstMove_DoesntStartTheGame()
+    {
+        // Arrange: the game is on move 3.
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Object.CurrentMove = 3;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(3, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(TimeLeft);
+        _chessEngine.Setup(e => e.MakeMove(Position, AMove))
+            .Returns(new MakeMoveResult(true, NewPosition, null, null));
+        _gateway.Setup(g => g.SaveAsync(game.Object, 3)).ReturnsAsync(true);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 3, AMove);
+
+        // Assert
+        game.Verify(g => g.Start(It.IsAny<DateTime>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenMoveDoesntEndTheGame_DoesntCompleteIt()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(TimeLeft);
+        _chessEngine.Setup(e => e.MakeMove(Position, AMove))
+            .Returns(new MakeMoveResult(true, NewPosition, null, null));
+        _gateway.Setup(g => g.SaveAsync(game.Object, 1)).ReturnsAsync(true);
+
+        // Act
+        await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        game.Verify(
+            g => g.Complete(It.IsAny<GameResult>(), It.IsAny<PieceColour?>(), It.IsAny<DateTime>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_WhenExactlyNoTimeLeft_StillPlaysTheMove()
+    {
+        // Arrange
+        var game = new Mock<Game>(_white, PieceColour.White, null);
+        game.Object.BlackClientId = _black;
+        game.Object.GameState = Position;
+        game.Setup(g => g.IsParticipant(_white)).Returns(true);
+        game.Setup(g => g.IsRepeatOfLastMove(1, PieceColour.White, AMove)).Returns(false);
+        game.Setup(g => g.IsGameActive()).Returns(true);
+        game.Setup(g => g.IsPlayersTurn(PieceColour.White)).Returns(true);
+        _gateway.Setup(g => g.GetGameByIdAsync(game.Object.Id)).ReturnsAsync(game.Object);
+        _timeProvider.Setup(t => t.GetUtcNow()).Returns(Now);
+        game.Setup(g => g.CalculateTimeRemaining(PieceColour.White, Now.UtcDateTime)).Returns(0);
+        _chessEngine.Setup(e => e.MakeMove(Position, AMove))
+            .Returns(new MakeMoveResult(true, NewPosition, null, null));
+        _gateway.Setup(g => g.SaveAsync(game.Object, 1)).ReturnsAsync(true);
+
+        // Act
+        var result = await NewUseCase().ExecuteAsync(_white, game.Object.Id, 1, AMove);
+
+        // Assert
+        Assert.Null(result.Error);
+        game.Verify(
+            g => g.RecordMove(AMove, NewPosition, PieceColour.White, 0, Now.UtcDateTime),
+            Times.Once);
+    }
 }

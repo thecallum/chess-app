@@ -78,4 +78,21 @@ public class JoinGameUseCaseTests
         Assert.Null(result.Game);
         Assert.Equal(expected, result.Error);
     }
+
+    [Theory]
+    [InlineData(JoinGameByCodeError.InvalidCode)]
+    [InlineData(JoinGameByCodeError.NotJoinable)]
+    [InlineData(JoinGameByCodeError.GameFull)]
+    public async Task Execute_WhenGatewayReturnsError_SendsNoGameState(JoinGameByCodeError gatewayError)
+    {
+        // Arrange
+        _gateway.Setup(g => g.JoinGameByCodeAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new JoinGameByCodeResult(null, gatewayError));
+
+        // Act
+        await NewUseCase().ExecuteAsync(Guid.NewGuid(), "ABC");
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(It.IsAny<Game>()), Times.Never);
+    }
 }
