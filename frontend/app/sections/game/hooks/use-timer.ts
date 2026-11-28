@@ -1,38 +1,37 @@
 import { useEffect, useState } from "react";
-import type { Colour } from "~/lib/api";
+import { playerTimerIsRunning, timeLeftInMs } from "../lib/clocks";
 import type { GameStateMessage } from "../lib/game-connection";
 
-export function useTimer(state: GameStateMessage | undefined) {
+function useTimerInterval(timerIsRunning: boolean) {
   const [now, setNow] = useState(() => Date.now());
 
-  const [, sideToMove, , , , fullMove] = (state?.gameState ?? "").split(" ");
-  const isFirstMove = sideToMove === "w" && fullMove === "1";
-  const running: Colour | null =
-    state && state.status !== "completed" && !isFirstMove
-      ? sideToMove === "w"
-        ? "white"
-        : "black"
-      : null;
-
   useEffect(() => {
-    if (!running) return;
+    if (!timerIsRunning) return;
+
+    // When rendering the time left from state, it can look out of sync depending on the devices clock.
+    // We run this every 200ms to ensure time left appears in sync
+
     const timer = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer);
-  }, [running]);
+  }, [timerIsRunning]);
 
-  function timeLeft(side: Colour) {
-    if (!state) return 0;
-    const stored =
-      side === "white"
-        ? state.whiteTimeRemainingMs
-        : state.blackTimeRemainingMs;
-    if (side !== running || !state.lastMoveAt) return stored;
-    const msUsed = now - new Date(state.lastMoveAt).getTime();
-    return Math.max(0, stored - msUsed);
-  }
+  return now;
+}
+
+export function useTimer(state: GameStateMessage | undefined) {
+  const whiteTimerIsRunning = playerTimerIsRunning(state, "white");
+  const blackTimerIsRunning = playerTimerIsRunning(state, "black");
+
+  const now = useTimerInterval(whiteTimerIsRunning || blackTimerIsRunning);
 
   return {
-    white: { ms: timeLeft("white"), running: running === "white" },
-    black: { ms: timeLeft("black"), running: running === "black" },
+    white: {
+      ms: timeLeftInMs(state, "white", now, whiteTimerIsRunning),
+      running: whiteTimerIsRunning,
+    },
+    black: {
+      ms: timeLeftInMs(state, "black", now, blackTimerIsRunning),
+      running: blackTimerIsRunning,
+    },
   };
 }
