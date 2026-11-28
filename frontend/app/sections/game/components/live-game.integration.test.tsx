@@ -1,132 +1,53 @@
 import { act, render, screen, within } from "@testing-library/react";
-import type { ChessboardOptions } from "react-chessboard";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Game, GameStatus } from "~/lib/api";
+import type { Colour, Game, GameStatus } from "~/lib/api";
 import {
-  createGameConnection,
-  type ConnectionStatus,
-  type GameStateMessage,
-} from "../lib/game-connection";
+  AFTER_E4,
+  AFTER_E4_E5,
+  AFTER_E4_E5_NF3,
+  answerWaitingMoves,
+  board,
+  clickSquare,
+  createFakeServer,
+  dropPiece,
+  finishMove,
+  FOOLS_MATE,
+  gameState,
+  START,
+  WHITE_IN_CHECK,
+} from "../integration-helpers";
 import { LiveGame } from "./live-game";
 
-const board = vi.hoisted(() => ({
-  options: undefined as ChessboardOptions | undefined,
-}));
-
-vi.mock("react-chessboard", () => ({
-  Chessboard: ({ options }: { options: ChessboardOptions }) => {
-    board.options = options;
-    return null;
-  },
+vi.mock("react-chessboard", async () => ({
+  Chessboard: (await import("../integration-helpers")).FakeChessboard,
 }));
 vi.mock("../lib/game-connection");
 
-const START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const AFTER_E4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
-const AFTER_E4_E5 =
-  "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
-const AFTER_E4_E5_NF3 =
-  "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
-// 1. f3 e6 2. e4 Qh4+
-const WHITE_IN_CHECK =
-  "rnb1kbnr/pppp1ppp/4p3/8/4P2q/5P2/PPPP2PP/RNBQKBNR w KQkq - 1 3";
-// 1. f3 e5 2. g4 Qh4#
-const FOOLS_MATE =
-  "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
-
-const game = (status: GameStatus = "in_progress"): Game => ({
+const game = (
+  status: GameStatus = "in_progress",
+  colour: Colour = "white",
+): Game => ({
   gameId: "g1",
   code: "ABC123",
-  colour: "white",
+  colour,
   status,
 });
 
-const gameState = (
-  overrides: Partial<GameStateMessage> = {},
-): GameStateMessage => ({
-  gameId: "g1",
-  status: "in_progress",
-  gameState: START,
-  currentMove: 1,
-  whiteTimeRemainingMs: 300_000,
-  blackTimeRemainingMs: 300_000,
-  lastMoveAt: null,
-  result: null,
-  winner: null,
-  ...overrides,
-});
-
-// React groups pending async transitions, so a move left waiting would hold
-// up the next test's moves. Each test answers any it leaves behind.
-let unansweredMoves: (() => void)[] = [];
-
-function answerWaitingMoves() {
-  unansweredMoves.forEach((resolve) => resolve());
-  unansweredMoves = [];
-}
-
-// Stands in for the server: tests send it states and statuses, and read the
-// moves sent to it. Moves wait until the test calls confirmMove.
-function createFakeServer() {
-  let sendState: (state: GameStateMessage) => void = () => {};
-  let sendStatus: (status: ConnectionStatus) => void = () => {};
-
-  const connection = {
-    start: vi.fn(() => Promise.resolve()),
-    stop: vi.fn(() => Promise.resolve()),
-    sendMove: vi.fn(
-      () => new Promise<void>((resolve) => unansweredMoves.push(resolve)),
-    ),
-    onGameState: vi.fn((handler) => (sendState = handler)),
-    onStatusChange: vi.fn((handler) => (sendStatus = handler)),
-  };
-  vi.mocked(createGameConnection).mockReturnValue(connection);
-
-  return {
-    connection,
-    sendState: (state: GameStateMessage) => act(() => sendState(state)),
-    sendStatus: (status: ConnectionStatus) => act(() => sendStatus(status)),
-    // Like the real server: sends the new state, then answers the move.
-    confirmMove: async (state: GameStateMessage) => {
-      act(() => sendState(state));
-      answerWaitingMoves();
-      await finishMove();
-    },
-  };
-}
-
 // Waits for the connection to start, so its "connected" status doesn't land
 // in the middle of a test. The router is for the game over menu's link.
-async function renderLiveGame(status: GameStatus = "in_progress") {
+async function renderLiveGame(
+  status: GameStatus = "in_progress",
+  colour: Colour = "white",
+) {
   await act(async () => {
     render(
       <MemoryRouter>
-        <LiveGame game={game(status)} />
+        <LiveGame game={game(status, colour)} />
       </MemoryRouter>,
     );
   });
 }
-
-// Lets the move's transition finish once the server has replied.
-const finishMove = () => act(async () => {});
-
-const clickSquare = (square: string, pieceType?: string) =>
-  act(() =>
-    board.options?.onSquareClick?.({
-      square,
-      piece: pieceType ? { pieceType } : null,
-    }),
-  );
-
-const dropPiece = (pieceType: string, from: string, to: string) =>
-  act(() =>
-    board.options?.onPieceDrop?.({
-      piece: { pieceType, position: from, isSparePiece: false },
-      sourceSquare: from,
-      targetSquare: to,
-    }),
-  );
 
 const heading = () => screen.getByRole("heading", { level: 1 });
 
@@ -175,6 +96,26 @@ describe("LiveGame", () => {
       expect(server.connection.sendMove).toHaveBeenCalledWith(3, {
         from: "g1",
         to: "f3",
+      });
+    });
+
+    it("lets black move once white has moved", async () => {
+      // Arrange
+      const server = createFakeServer();
+      await renderLiveGame("in_progress", "black");
+      server.sendState(gameState());
+
+      // Act
+      server.sendState(gameState({ gameState: AFTER_E4, currentMove: 2 }));
+      clickSquare("e7", "bP");
+      clickSquare("e5");
+
+      // Assert
+      expect(board.options?.boardOrientation).toBe("black");
+      expect(screen.getByText("Black (you)")).toBeInTheDocument();
+      expect(server.connection.sendMove).toHaveBeenCalledWith(2, {
+        from: "e7",
+        to: "e5",
       });
     });
 
@@ -518,6 +459,21 @@ describe("LiveGame", () => {
       expect(
         screen.queryByRole("dialog", { name: /reconnecting/i }),
       ).not.toBeInTheDocument();
+    });
+
+    it("shows the disconnected menu when the connection can't start", async () => {
+      // Arrange
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const server = createFakeServer();
+      server.connection.start.mockRejectedValue(new Error("Network error"));
+
+      // Act
+      await renderLiveGame();
+
+      // Assert
+      expect(
+        screen.getByRole("dialog", { name: "Disconnected" }),
+      ).toBeInTheDocument();
     });
   });
 });
