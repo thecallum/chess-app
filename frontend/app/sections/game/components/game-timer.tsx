@@ -1,6 +1,7 @@
 import type { Colour } from "~/lib/api";
 import type { GameStateMessage } from "../lib/game-connection";
 import { useTimer } from "../hooks/use-timer";
+import { formatTime } from "../lib/clocks";
 
 export function GameTimer({
   state,
@@ -58,11 +59,4 @@ function PlayerClock({
       </p>
     </div>
   );
-}
-
-// 754_900 => "12:34". Whole seconds, rounded down.
-function formatTime(ms: number) {
-  const seconds = Math.floor(Math.max(0, ms) / 1000);
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }

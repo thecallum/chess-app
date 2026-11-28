@@ -1,4 +1,9 @@
 import type { Colour, GameStatus } from "~/lib/api";
+import {
+  gameCompletedMessage,
+  gameInProgressMessage,
+  headingText,
+} from "../lib/game-text";
 
 // The page heading: whose move it is, or how the game ended.
 export function GameStatusBar({
@@ -23,40 +28,9 @@ export function GameStatusBar({
       </h1>
       <p className="text-sm text-muted-foreground">
         {status === "completed"
-          ? [outcomeText(winner, colour), result && resultText(result)]
-              .filter(Boolean)
-              .join(" · ")
-          : `You are playing ${colour}${status === "in_progress" && inCheck ? " · Check" : ""}`}
+          ? gameCompletedMessage(winner, colour, result)
+          : gameInProgressMessage(colour, inCheck)}
       </p>
     </header>
   );
-}
-
-function headingText(status: string, myTurn: boolean) {
-  if (status === "waiting") return "Waiting for your opponent";
-  if (status === "completed") return "Game over";
-  return myTurn ? "Your move" : "Opponent's move";
-}
-
-// "Black wins (you)", "White wins" or "Draw".
-export function outcomeText(winner: Colour | null, colour: Colour) {
-  if (!winner) return "Draw";
-  return `${capitalise(winner)} wins${winner === colour ? " (you)" : ""}`;
-}
-
-// The server sends the result's name, like "FiftyMoveRule".
-export function resultText(result: string) {
-  const labels: Record<string, string> = {
-    Checkmate: "checkmate",
-    Stalemate: "stalemate",
-    InsufficientMaterial: "insufficient material",
-    FiftyMoveRule: "fifty-move rule",
-    Repetition: "repetition",
-    Timeout: "timeout",
-  };
-  return labels[result] ?? result;
-}
-
-function capitalise(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

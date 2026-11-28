@@ -36,3 +36,10 @@ export function timeLeftInMs(
   const msSinceLastMove = now - new Date(state.lastMoveAt).getTime();
   return Math.max(0, stored - msSinceLastMove);
 }
+
+// 754_900 => "12:34". Whole seconds, rounded down.
+export function formatTime(ms: number) {
+  const seconds = Math.floor(Math.max(0, ms) / 1000);
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}

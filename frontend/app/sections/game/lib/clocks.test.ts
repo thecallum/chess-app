@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Colour } from "~/lib/api";
-import { playerTimerIsRunning, timeLeftInMs } from "./clocks";
+import { formatTime, playerTimerIsRunning, timeLeftInMs } from "./clocks";
 import type { GameStateMessage } from "./game-connection";
 
 const LAST_MOVE_AT = "2026-01-01T12:00:00.000Z";
@@ -138,5 +138,23 @@ describe("timeLeftInMs", () => {
 
     // Assert
     expect(ms).toBe(0);
+  });
+});
+
+describe("formatTime", () => {
+  it.each([
+    [300_000, "5:00"],
+    [754_900, "12:34"],
+    [60_000, "1:00"],
+    [59_999, "0:59"],
+    [5_000, "0:05"],
+    [0, "0:00"],
+    [-5_000, "0:00"],
+  ])("formats %i ms as %s", (ms, expected) => {
+    // Act
+    const text = formatTime(ms);
+
+    // Assert
+    expect(text).toBe(expected);
   });
 });

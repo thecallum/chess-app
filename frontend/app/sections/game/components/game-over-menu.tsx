@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Button, buttonVariants } from "~/components/ui/button";
 import type { Colour } from "~/lib/api";
-import { outcomeText, resultText } from "./game-status-bar";
+import { outcomeText, resultText } from "../lib/game-text";
 import { MenuDialog } from "./menu-dialog";
 
 // Shown over the whole page when the game ends, centred on screen. On a phone

@@ -49,7 +49,7 @@ export function GameBoard({ game }: { game: Game }) {
               title={`You are playing ${colour}`}
               gameState={optimisticState.gameState}
               orientation={colour}
-              active={canMove}
+              boardIsActiveForPlayer={canMove}
               onMove={play}
             />
           ) : (
