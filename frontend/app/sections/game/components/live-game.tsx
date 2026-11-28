@@ -5,10 +5,10 @@ import { GameOverMenu } from "./game-over-menu";
 import { GameStatusBar } from "./game-status-bar";
 import { GameTimer } from "./game-timer";
 import { WaitingForOpponent } from "./waiting-for-opponent";
-import { useGameHandler } from "../hooks/use-game-handler";
+import { useLiveGame } from "../hooks/use-live-game";
 
-// One board for this player, driven by useGameHandler.
-export function GameBoard({ game }: { game: Game }) {
+// The game being played, driven by useLiveGame.
+export function LiveGame({ game }: { game: Game }) {
   const { colour } = game;
 
   const {
@@ -19,7 +19,7 @@ export function GameBoard({ game }: { game: Game }) {
     inCheck,
     canMove,
     play,
-  } = useGameHandler(game);
+  } = useLiveGame(game);
 
   return (
     <>

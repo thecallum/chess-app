@@ -10,7 +10,7 @@ const applyMove = (gameState: string, intent: MoveIntent) => {
   return game.fen();
 };
 
-export function useGameHandler(game: Game) {
+export function useLiveGame(game: Game) {
   const { state, connectionStatus, move } = useGameSession(game.gameId);
 
   const [optimisticState, showMove] = useOptimistic(

@@ -1,4 +1,4 @@
-import { GameSection } from "~/sections/game/game-section";
+import { GameLoader } from "~/sections/game/game-loader";
 
 // Client-only route: not in the prerender list.
 export function meta() {
@@ -8,7 +8,7 @@ export function meta() {
 export default function PlayGame() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-4 sm:gap-8 sm:px-6 sm:py-6">
-      <GameSection />
+      <GameLoader />
     </main>
   );
 }

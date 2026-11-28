@@ -5,7 +5,7 @@ import type {
   ConnectionStatus,
   GameStateMessage,
 } from "../lib/game-connection";
-import { useGameHandler } from "./use-game-handler";
+import { useLiveGame } from "./use-live-game";
 import { useGameSession, type MoveResult } from "./use-game-session";
 
 vi.mock("./use-game-session");
@@ -60,7 +60,7 @@ function deferredMove() {
   };
 }
 
-describe("useGameHandler", () => {
+describe("useLiveGame", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -68,7 +68,7 @@ describe("useGameHandler", () => {
   it("follows the connection status from the session", () => {
     // Arrange
     mockSession({ connectionStatus: "connecting" });
-    const { result, rerender } = renderHook(() => useGameHandler(game));
+    const { result, rerender } = renderHook(() => useLiveGame(game));
 
     // Act
     mockSession({ connectionStatus: "reconnecting" });
@@ -81,7 +81,7 @@ describe("useGameHandler", () => {
   it("follows the game state from the session", () => {
     // Arrange
     mockSession({ state: gameState() });
-    const { result, rerender } = renderHook(() => useGameHandler(game));
+    const { result, rerender } = renderHook(() => useLiveGame(game));
     const next = gameState({ gameState: AFTER_E4, currentMove: 1 });
 
     // Act
@@ -97,7 +97,7 @@ describe("useGameHandler", () => {
     // Arrange
     const move = vi.fn();
     mockSession({ move });
-    const { result } = renderHook(() => useGameHandler(game));
+    const { result } = renderHook(() => useLiveGame(game));
 
     // Act
     act(() => result.current.play({ from: "e2", to: "e4" }));
@@ -110,7 +110,7 @@ describe("useGameHandler", () => {
     // Arrange
     const { move, resolve } = deferredMove();
     mockSession({ state: gameState(), move });
-    const { result, rerender } = renderHook(() => useGameHandler(game));
+    const { result, rerender } = renderHook(() => useLiveGame(game));
 
     // Act
     act(() => result.current.play({ from: "e2", to: "e4" }));
@@ -132,7 +132,7 @@ describe("useGameHandler", () => {
     // Arrange
     const { move, resolve } = deferredMove();
     mockSession({ state: gameState(), move });
-    const { result } = renderHook(() => useGameHandler(game));
+    const { result } = renderHook(() => useLiveGame(game));
 
     // Act
     act(() => result.current.play({ from: "e2", to: "e4" }));
@@ -152,7 +152,7 @@ describe("useGameHandler", () => {
     mockSession({ state: gameState({ gameState: fen }) });
 
     // Act
-    const { result } = renderHook(() => useGameHandler(game));
+    const { result } = renderHook(() => useLiveGame(game));
 
     // Assert
     expect(result.current.turn).toBe(turn);
@@ -168,7 +168,7 @@ describe("useGameHandler", () => {
     mockSession({ state: gameState({ gameState: fen, status }) });
 
     // Act
-    const { result } = renderHook(() => useGameHandler(game));
+    const { result } = renderHook(() => useLiveGame(game));
 
     // Assert
     expect(result.current.canMove).toBe(canMove);
@@ -182,7 +182,7 @@ describe("useGameHandler", () => {
     mockSession({ state: gameState({ gameState: fen }) });
 
     // Act
-    const { result } = renderHook(() => useGameHandler(game));
+    const { result } = renderHook(() => useLiveGame(game));
 
     // Assert
     expect(result.current.inCheck).toBe(inCheck);

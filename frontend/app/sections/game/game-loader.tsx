@@ -1,10 +1,10 @@
 import { useParams } from "react-router";
-import { GameBoard } from "./components/game-board";
+import { LiveGame } from "./components/live-game";
 import { GameNotFound } from "./components/game-not-found";
 import { useGameQuery } from "./hooks/use-game-query";
 
 // The game page's content: loads the game named in the URL and shows it.
-export function GameSection() {
+export function GameLoader() {
   const { gameId } = useParams();
   const { data: game, isPending, isError } = useGameQuery(gameId);
 
@@ -13,5 +13,5 @@ export function GameSection() {
   }
   if (isError) return <GameNotFound />;
 
-  return <GameBoard game={game} />;
+  return <LiveGame game={game} />;
 }

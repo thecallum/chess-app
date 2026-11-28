@@ -1,14 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Game, GameStatus } from "~/lib/api";
-import { useGameHandler } from "../hooks/use-game-handler";
+import { useLiveGame } from "../hooks/use-live-game";
 import type {
   ConnectionStatus,
   GameStateMessage,
 } from "../lib/game-connection";
-import { GameBoard } from "./game-board";
+import { LiveGame } from "./live-game";
 
-vi.mock("../hooks/use-game-handler");
+vi.mock("../hooks/use-live-game");
 vi.mock("./waiting-for-opponent", () => ({
   WaitingForOpponent: () => <p>Waiting for opponent</p>,
 }));
@@ -48,7 +48,7 @@ function mockHandler({
   state?: GameStateMessage;
   connectionStatus?: ConnectionStatus;
 }) {
-  vi.mocked(useGameHandler).mockReturnValue({
+  vi.mocked(useLiveGame).mockReturnValue({
     state,
     optimisticState: state,
     connectionStatus,
@@ -59,7 +59,7 @@ function mockHandler({
   });
 }
 
-describe("GameBoard", () => {
+describe("LiveGame", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -81,7 +81,7 @@ describe("GameBoard", () => {
       mockHandler({ state });
 
       // Act
-      render(<GameBoard game={game(pageStatus)} />);
+      render(<LiveGame game={game(pageStatus)} />);
 
       // Assert
       expect(screen.getByText("Waiting for opponent")).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe("GameBoard", () => {
       mockHandler({ state });
 
       // Act
-      render(<GameBoard game={game(pageStatus)} />);
+      render(<LiveGame game={game(pageStatus)} />);
 
       // Assert
       expect(
@@ -118,7 +118,7 @@ describe("GameBoard", () => {
       mockHandler({ state: gameState("in_progress") });
 
       // Act
-      render(<GameBoard game={game()} />);
+      render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.getByText("Status bar")).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe("GameBoard", () => {
       mockHandler({ state });
 
       // Act
-      render(<GameBoard game={game()} />);
+      render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.queryByText("Status bar")).not.toBeInTheDocument();
@@ -144,7 +144,7 @@ describe("GameBoard", () => {
     mockHandler({ state: gameState("in_progress") });
 
     // Act
-    render(<GameBoard game={game()} />);
+    render(<LiveGame game={game()} />);
 
     // Assert
     expect(screen.getByText("Timer")).toBeInTheDocument();
@@ -156,7 +156,7 @@ describe("GameBoard", () => {
       mockHandler({ state: gameState("in_progress") });
 
       // Act
-      render(<GameBoard game={game()} />);
+      render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.getByText("Board")).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe("GameBoard", () => {
       mockHandler({ state: undefined });
 
       // Act
-      const { container } = render(<GameBoard game={game()} />);
+      const { container } = render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.queryByText("Board")).not.toBeInTheDocument();
@@ -183,7 +183,7 @@ describe("GameBoard", () => {
       mockHandler({ state: gameState("completed") });
 
       // Act
-      render(<GameBoard game={game()} />);
+      render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.getByText("Game over")).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe("GameBoard", () => {
       mockHandler({ state: gameState("in_progress") });
 
       // Act
-      render(<GameBoard game={game()} />);
+      render(<LiveGame game={game()} />);
 
       // Assert
       expect(screen.queryByText("Game over")).not.toBeInTheDocument();
@@ -209,7 +209,7 @@ describe("GameBoard", () => {
         mockHandler({ state: gameState("in_progress"), connectionStatus });
 
         // Act
-        render(<GameBoard game={game()} />);
+        render(<LiveGame game={game()} />);
 
         // Assert
         expect(screen.getByText("Connection menu")).toBeInTheDocument();
@@ -223,7 +223,7 @@ describe("GameBoard", () => {
         mockHandler({ state: gameState("in_progress"), connectionStatus });
 
         // Act
-        render(<GameBoard game={game()} />);
+        render(<LiveGame game={game()} />);
 
         // Assert
         expect(screen.queryByText("Connection menu")).not.toBeInTheDocument();
