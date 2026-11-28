@@ -1,5 +1,5 @@
 import type { Colour } from "~/lib/api";
-import type { GameStateMessage } from "../hooks/use-game-session";
+import type { GameStateMessage } from "../lib/game-connection";
 import { useTimer } from "../hooks/use-timer";
 
 export function GameTimer({

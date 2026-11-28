@@ -1,5 +1,5 @@
 import { Button } from "~/components/ui/button";
-import type { ConnectionStatus } from "../hooks/use-game-session";
+import type { ConnectionStatus } from "../lib/game-connection";
 import { MenuDialog } from "./menu-dialog";
 
 export function ConnectionMenu({

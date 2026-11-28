@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Colour } from "~/lib/api";
-import type { GameStateMessage } from "./use-game-session";
+import type { GameStateMessage } from "../lib/game-connection";
 
 export function useTimer(state: GameStateMessage | undefined) {
   const [now, setNow] = useState(() => Date.now());
