@@ -14,7 +14,6 @@ describe("createGameRequest", () => {
     const game: Game = {
       gameId: "g1",
       code: "ABC123",
-      role: "host",
       colour: "black",
       status: "waiting",
     };

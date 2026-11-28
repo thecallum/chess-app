@@ -58,6 +58,29 @@ public sealed class GamesGateway : IGamesGateway
         return new(await GetGameByIdAsync(game.Id), null);
     }
 
+    public async Task<bool> SaveAsync(Game game, int expectedMove)
+    {
+        var rows = await _db.Games
+            .Where(g => g.Id == game.Id
+                && g.CurrentMove == expectedMove
+                && g.Status != GameStatus.Completed)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(g => g.GameState, game.GameState)
+                .SetProperty(g => g.Moves, game.Moves)
+                .SetProperty(g => g.CurrentMove, game.CurrentMove)
+                .SetProperty(g => g.WhiteTimeRemainingMs, game.WhiteTimeRemainingMs)
+                .SetProperty(g => g.BlackTimeRemainingMs, game.BlackTimeRemainingMs)
+                .SetProperty(g => g.LastMoveAt, game.LastMoveAt)
+                .SetProperty(g => g.StartedAt, game.StartedAt)
+                .SetProperty(g => g.CompletedAt, game.CompletedAt)
+                .SetProperty(g => g.Status, game.Status)
+                .SetProperty(g => g.Result, game.Result)
+                .SetProperty(g => g.WinningPlayerId, game.WinningPlayerId));
+
+        // No row matched: another request changed the game after it was read.
+        return rows == 1;
+    }
+
     private async Task<bool> SeatAsWhiteAsync(Guid gameId, Guid playerId)
     {
         var rows = await _db.Games

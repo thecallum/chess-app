@@ -45,7 +45,6 @@ describe("JoinGameForm", () => {
     vi.mocked(joinGameRequest).mockResolvedValue({
       gameId: "g1",
       code: "ABC123",
-      role: "guest",
       colour: "white",
       status: "in_progress",
     });

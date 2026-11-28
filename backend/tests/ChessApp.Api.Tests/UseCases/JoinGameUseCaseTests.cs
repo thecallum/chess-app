@@ -8,8 +8,9 @@ namespace ChessApp.Api.Tests.UseCases;
 public class JoinGameUseCaseTests
 {
     private readonly Mock<IGamesGateway> _gateway = new();
+    private readonly Mock<IGameNotifier> _gameNotifier = new();
 
-    private JoinGameUseCase NewUseCase() => new(_gateway.Object);
+    private JoinGameUseCase NewUseCase() => new(_gateway.Object, _gameNotifier.Object);
 
     [Fact]
     public async Task Execute_WhenGatewayJoinsGame_ReturnsGame()
@@ -26,6 +27,22 @@ public class JoinGameUseCaseTests
         // Assert
         Assert.Null(result.Error);
         Assert.Same(game, result.Game);
+    }
+
+    [Fact]
+    public async Task Execute_WhenGatewayJoinsGame_SendsGameState()
+    {
+        // Arrange
+        var playerId = Guid.NewGuid();
+        var game = new Game(Guid.NewGuid(), PieceColour.White, "ABC");
+        _gateway.Setup(g => g.JoinGameByCodeAsync("ABC", playerId))
+            .ReturnsAsync(new JoinGameByCodeResult(game, null));
+
+        // Act
+        await NewUseCase().ExecuteAsync(playerId, "ABC");
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(game), Times.Once);
     }
 
     [Fact]
@@ -60,5 +77,22 @@ public class JoinGameUseCaseTests
         // Assert
         Assert.Null(result.Game);
         Assert.Equal(expected, result.Error);
+    }
+
+    [Theory]
+    [InlineData(JoinGameByCodeError.InvalidCode)]
+    [InlineData(JoinGameByCodeError.NotJoinable)]
+    [InlineData(JoinGameByCodeError.GameFull)]
+    public async Task Execute_WhenGatewayReturnsError_SendsNoGameState(JoinGameByCodeError gatewayError)
+    {
+        // Arrange
+        _gateway.Setup(g => g.JoinGameByCodeAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new JoinGameByCodeResult(null, gatewayError));
+
+        // Act
+        await NewUseCase().ExecuteAsync(Guid.NewGuid(), "ABC");
+
+        // Assert
+        _gameNotifier.Verify(n => n.SendGameStateAsync(It.IsAny<Game>()), Times.Never);
     }
 }

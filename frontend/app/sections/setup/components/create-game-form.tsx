@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
 import { createGameRequest } from "../requests/create-game-request";
-import { colours, type Colour } from "../modes";
+import type { ColourChoice } from "~/lib/api";
+import { colours } from "../modes";
 
 export function CreateGameForm() {
   const navigate = useNavigate();
-  const [colour, setColour] = useState<Colour>("random");
+  const [colour, setColour] = useState<ColourChoice>("random");
   const [error, setError] = useState<string>();
 
   async function create(e: React.FormEvent) {

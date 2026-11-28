@@ -16,4 +16,12 @@ public interface IGamesGateway
 
     /// <summary>Seats the player in the empty colour. Safe if two players join at once.</summary>
     Task<JoinGameByCodeResult> JoinGameByCodeAsync(string code, Guid playerId);
+
+    /// <summary>
+    /// Saves everything playing the game can change, in one update: position, moves, move number,
+    /// clocks, timings, status and result. Seats and invite code are left alone.
+    /// Optimistic locking: only saves if the stored game is still on <paramref name="expectedMove"/>
+    /// and not completed. Returns false if it changed since it was read, and nothing is saved.
+    /// </summary>
+    Task<bool> SaveAsync(Game game, int expectedMove);
 }

@@ -229,4 +229,80 @@ public class GamesGatewayTests : IAsyncLifetime
         Assert.Contains(saved!.BlackClientId, joinerIds.Select(id => (Guid?)id));
         Assert.Equal(saved.BlackClientId, winners.Single().Game?.BlackClientId);
     }
+
+    [Fact]
+    public async Task SaveAsync_SavesChangesToGame()
+    {
+        // Arrange: a seated game, then a first move that ends it, all in memory.
+        var start = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var game = NewGame(code: "SAVE01");
+        game.BlackClientId = Guid.NewGuid();
+        game.Status = GameStatus.WaitingForFirstMove;
+        await NewGateway().CreateGameAsync(game);
+        var loaded = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        loaded.Start(start);
+        loaded.RecordMove("{e2 - e4}", "position-after", PieceColour.White, 590_000, start);
+        loaded.Complete(GameResult.Checkmate, PieceColour.White, start);
+
+        // Act
+        var saved = await NewGateway().SaveAsync(loaded, expectedMove: 1);
+
+        // Assert
+        Assert.True(saved);
+        var stored = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        Assert.Equal("position-after", stored.GameState);
+        Assert.Equal(["{e2 - e4}"], stored.Moves);
+        Assert.Equal(2, stored.CurrentMove);
+        Assert.Equal(590_000, stored.WhiteTimeRemainingMs);
+        Assert.Equal(start, stored.LastMoveAt);
+        Assert.Equal(start, stored.StartedAt);
+        Assert.Equal(GameStatus.Completed, stored.Status);
+        Assert.Equal(GameResult.Checkmate, stored.Result);
+        Assert.Equal(game.WhiteClientId, stored.WinningPlayerId);
+        Assert.Equal(start, stored.CompletedAt);
+        // Seats and invite code aren't SaveAsync's to change.
+        Assert.Equal(game.WhiteClientId, stored.WhiteClientId);
+        Assert.Equal(game.BlackClientId, stored.BlackClientId);
+        Assert.Equal("SAVE01", stored.GameInviteCode);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenGameCompleted_DoesntSave()
+    {
+        // Arrange
+        var game = NewGame();
+        game.Status = GameStatus.Completed;
+        game.GameState = "final-position";
+        await NewGateway().CreateGameAsync(game);
+        var loaded = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        loaded.GameState = "changed";
+
+        // Act
+        var saved = await NewGateway().SaveAsync(loaded, expectedMove: 1);
+
+        // Assert
+        Assert.False(saved);
+        var stored = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        Assert.Equal("final-position", stored.GameState);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenExpectedMoveDoesntMatch_DoesntSave()
+    {
+        // Arrange: the stored game is on move 1.
+        var game = NewGame();
+        game.Status = GameStatus.InProgress;
+        game.GameState = "original-position";
+        await NewGateway().CreateGameAsync(game);
+        var loaded = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        loaded.GameState = "changed";
+
+        // Act: saved as if it had been read on move 2.
+        var saved = await NewGateway().SaveAsync(loaded, expectedMove: 2);
+
+        // Assert
+        Assert.False(saved);
+        var stored = (await NewGateway().GetGameByIdAsync(game.Id))!;
+        Assert.Equal("original-position", stored.GameState);
+    }
 }

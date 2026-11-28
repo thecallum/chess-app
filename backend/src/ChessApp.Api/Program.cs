@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options => options.KeepAliveInterval = TimeSpan.FromSeconds(5));
 
 builder.Services.AddAuthentication(GuestAuthentication.Scheme)
     .AddScheme<AuthenticationSchemeOptions, GuestAuthenticationHandler>(GuestAuthentication.Scheme, null);
@@ -24,10 +24,16 @@ builder.Services.AddDbContext<ChessDbContext>((services, options) =>
     options.UseNpgsql(services.GetRequiredService<IConfiguration>().GetConnectionString("Default")
         ?? throw new InvalidOperationException("Missing connection string ConnectionStrings:Default.")));
 builder.Services.AddScoped<IGamesGateway, GamesGateway>();
+// Scoped: the board holds one position, so each request gets its own.
+builder.Services.AddScoped<IChessBoard, ChessBoardWrapper>();
+builder.Services.AddScoped<IChessEngine, ChessEngine>();
+builder.Services.AddSingleton<IGameNotifier, GameNotifier>();
 builder.Services.AddHostedService<DatabaseMigrator>();
 builder.Services.AddScoped<ICreateGameUseCase, CreateGameUseCase>();
 builder.Services.AddScoped<IJoinGameUseCase, JoinGameUseCase>();
 builder.Services.AddScoped<IGetGameUseCase, GetGameUseCase>();
+builder.Services.AddScoped<IConnectToGameUseCase, ConnectToGameUseCase>();
+builder.Services.AddScoped<ISendMoveUseCase, SendMoveUseCase>();
 
 var app = builder.Build();
 

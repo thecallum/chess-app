@@ -1,6 +1,6 @@
 import { Bot, Globe, Users, type LucideIcon } from "lucide-react";
+import type { ColourChoice } from "~/lib/api";
 
-export type Colour = "white" | "black" | "random";
 export type ModeId = "friend" | "online" | "computer";
 
 export type Mode = {
@@ -38,7 +38,7 @@ export const modes: Mode[] = [
   },
 ];
 
-export const colours: { id: Colour; label: string }[] = [
+export const colours: { id: ColourChoice; label: string }[] = [
   { id: "white", label: "White" },
   { id: "black", label: "Black" },
   { id: "random", label: "Random" },

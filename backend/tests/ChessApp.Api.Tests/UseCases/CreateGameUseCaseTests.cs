@@ -8,8 +8,9 @@ namespace ChessApp.Api.Tests.UseCases;
 public class CreateGameUseCaseTests
 {
     private readonly Mock<IGamesGateway> _gateway = new();
+    private readonly Mock<IChessEngine> _chessEngine = new();
 
-    private CreateGameUseCase NewUseCase() => new(_gateway.Object);
+    private CreateGameUseCase NewUseCase() => new(_gateway.Object, _chessEngine.Object);
 
     [Fact]
     public async Task Execute_WhenChoosingWhite_SeatsPlayerAsWhite()
@@ -89,5 +90,20 @@ public class CreateGameUseCaseTests
         Assert.Equal(2, attempts.Count);
         Assert.NotEqual(attempts[0].GameInviteCode, game.GameInviteCode);
         Assert.Same(attempts[1], game);
+    }
+
+    [Fact]
+    public async Task Execute_SetsTheStartingPositionFromTheChessEngine()
+    {
+        // Arrange
+        _chessEngine.Setup(e => e.InitGame()).Returns("starting-position");
+        _gateway.Setup(g => g.CreateGameAsync(It.IsAny<Game>())).ReturnsAsync(true);
+
+        // Act
+        var game = await NewUseCase().ExecuteAsync(Guid.NewGuid(), ColourChoice.White);
+
+        // Assert
+        Assert.Equal("starting-position", game.GameState);
+        _gateway.Verify(g => g.CreateGameAsync(It.Is<Game>(saved => saved.GameState == "starting-position")), Times.Once);
     }
 }

@@ -14,7 +14,6 @@ describe("joinGameRequest", () => {
     const game: Game = {
       gameId: "g1",
       code: "ABC123",
-      role: "guest",
       colour: "white",
       status: "in_progress",
     };

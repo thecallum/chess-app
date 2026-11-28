@@ -1,0 +1,62 @@
+import type { Colour } from "~/lib/api";
+import type { GameStateMessage } from "../lib/game-connection";
+import { useTimer } from "../hooks/use-timer";
+import { formatTime } from "../lib/clocks";
+
+export function GameTimer({
+  state,
+  colour,
+}: {
+  state: GameStateMessage | undefined;
+  colour: Colour;
+}) {
+  const timer = useTimer(state);
+
+  // Before GameState arrives, empty bars of the same height keep the layout still.
+  if (!state) {
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        <div className="h-12" />
+        <div className="h-12" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <PlayerClock
+        label={`White (${colour === "white" ? "you" : "opponent"})`}
+        ms={timer.white.ms}
+        running={timer.white.running}
+      />
+      <PlayerClock
+        label={`Black (${colour === "black" ? "you" : "opponent"})`}
+        ms={timer.black.ms}
+        running={timer.black.running}
+      />
+    </div>
+  );
+}
+
+// One player's clock, shown as a bar above or below the board. Only shows the
+// time; GameTimer counts it down. Times are in milliseconds.
+function PlayerClock({
+  label,
+  ms,
+  running,
+}: {
+  label: string;
+  ms: number;
+  running: boolean;
+}) {
+  return (
+    <div
+      className={`flex h-12 items-center justify-between rounded-xl border px-3 ${running ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+    >
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="font-mono text-2xl tabular-nums" aria-live="off">
+        {formatTime(ms)}
+      </p>
+    </div>
+  );
+}

@@ -7,7 +7,6 @@ import { WaitingForOpponent } from "./waiting-for-opponent";
 const game: Game = {
   gameId: "088f2076-e370-463a-ae70-5410f1f34d46",
   code: "AE4905C80F4B4B32BA34C8F4C843DABF",
-  role: "host",
   colour: "white",
   status: "waiting",
 };

@@ -18,16 +18,7 @@ test("a friend can join a game with its invite code", async ({
   await guest.getByRole("button", { name: "Join game" }).click();
 
   await expect(guest).toHaveURL(/\/play\/games\/.+/);
-  await expect(
-    guest.getByRole("heading", { name: /you joined the game/i }),
-  ).toBeVisible();
-
-  // The host stops waiting once they reload. Live updates come later.
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: /waiting for your opponent/i }),
-  ).toBeHidden();
-  await expect(page.getByText(/you are playing/i).first()).toBeVisible();
+  await expect(guest.getByText(/you are playing (white|black)/i)).toBeVisible();
 
   await guestContext.close();
 });

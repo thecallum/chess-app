@@ -1,5 +1,4 @@
-import { request, type Game } from "~/lib/api";
-import type { Colour } from "../modes";
+import { request, type ColourChoice, type Game } from "~/lib/api";
 
-export const createGameRequest = (colour: Colour) =>
+export const createGameRequest = (colour: ColourChoice) =>
   request<Game>("/games", { method: "POST", body: JSON.stringify({ colour }) });

@@ -93,4 +93,18 @@ public class GameResponseFactoryTests
         // Assert
         Assert.Equal("in_progress", response.Status);
     }
+
+    [Fact]
+    public void Create_WhenCompleted_ReturnsCompletedStatus()
+    {
+        // Arrange
+        var playerId = Guid.NewGuid();
+        var game = new Game(playerId, PieceColour.White) { Status = GameStatus.Completed };
+
+        // Act
+        var response = GameResponseFactory.Create(game, playerId);
+
+        // Assert
+        Assert.Equal("completed", response.Status);
+    }
 }

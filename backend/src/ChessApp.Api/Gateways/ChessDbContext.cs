@@ -22,11 +22,12 @@ public sealed class ChessDbContext : DbContext
             game.HasIndex(g => g.GameInviteCode).IsUnique();
 
             game.Property(g => g.Status).HasConversion<string>().HasMaxLength(30);
+            game.Property(g => g.Result).HasConversion<string>().HasMaxLength(30);
 
             // Get-only properties aren't mapped by convention, so list them.
             game.Property(g => g.CreatedAt);
-            game.Property(g => g.WhiteTimeRemaining);
-            game.Property(g => g.BlackTimeRemaining);
+            game.Property(g => g.WhiteTimeRemainingMs);
+            game.Property(g => g.BlackTimeRemainingMs);
         });
     }
 }
