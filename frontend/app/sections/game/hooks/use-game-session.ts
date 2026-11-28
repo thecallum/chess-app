@@ -9,9 +9,6 @@ import {
 
 export type MoveResult = { ok: true } | { ok: false; error: string };
 
-export const toLongNotation = ({ from, to, promotion }: MoveIntent) =>
-  `{${from} - ${to}${promotion ? ` - =${promotion.toLowerCase()}` : ""}}`;
-
 export function useGameSession(gameId: string) {
   const [state, setState] = useState<GameStateMessage>();
   const [connectionStatus, setConnectionStatus] =
@@ -53,7 +50,7 @@ export function useGameSession(gameId: string) {
     if (!state || !connection) return { ok: false, error: "not_connected" };
 
     try {
-      await connection.sendMove(state.currentMove, toLongNotation(intent));
+      await connection.sendMove(state.currentMove, intent);
       return { ok: true };
     } catch (error) {
       return { ok: false, error: (error as Error).message };
